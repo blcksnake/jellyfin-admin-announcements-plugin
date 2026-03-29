@@ -14,7 +14,7 @@ $bundleDir = Join-Path $releaseRoot ("Announcements_{0}" -f $Version)
 $zipPath = Join-Path $releaseRoot ("Announcements_{0}.zip" -f $Version)
 
 if (-not $SkipBuild) {
-    dotnet publish -c Release -o $publishDir
+    dotnet publish (Join-Path $PSScriptRoot "Jellyfin.Plugin.Announcements.csproj") -c Release -o $publishDir
 }
 
 if (-not (Test-Path $publishDir)) {

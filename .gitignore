@@ -7,3 +7,4 @@ release/
 *.cache
 *.log
 .vscode/
+docker/jellyfin-test/

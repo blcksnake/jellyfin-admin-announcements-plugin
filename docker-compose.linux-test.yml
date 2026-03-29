@@ -1,0 +1,17 @@
+name: jellyfin-linux-test
+
+services:
+  jellyfin:
+    image: jellyfin/jellyfin:10.11.6
+    container_name: jellyfin-linux-test
+    user: "0:0" # test-only: allows plugin to patch web index automatically
+    environment:
+      - JELLYFIN_WEB_INDEX_PATH=/usr/share/jellyfin/web/index.html
+    ports:
+      - "8096:8096"
+    volumes:
+      - ./docker/jellyfin-test/config:/config
+      - ./docker/jellyfin-test/cache:/cache
+      - ./docker/jellyfin-test/media:/media
+      - ./release/Announcements_0.2.0.0:/config/plugins/Announcements_0.2.0.0
+    restart: unless-stopped
