@@ -45,6 +45,10 @@ For release packaging and repository publishing workflow, see DISTRIBUTION.md.
 ## Compatibility Notes
 
 - Plugin is tested with Jellyfin 10.11.6.
+- Auto web injection now supports Windows, Linux, macOS, and common container layouts.
+- Optional overrides for non-standard installs:
+	- `JELLYFIN_WEB_INDEX_PATH` (full path to `index.html`)
+	- `JELLYFIN_WEB_DIR` (directory containing `index.html`)
 - If announcements do not appear, restart Jellyfin and hard refresh browser.
 
 ## Contributing

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Reflection;
 using System.Runtime.Loader;
 using System.Text.Json;
@@ -124,18 +125,8 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
         const string ScriptTag = "<script src=\"/Plugins/Announcements/banner.js\" defer></script>";
         const string Marker = "Plugins/Announcements/banner.js";
 
-        // Search well-known locations for jellyfin-web/index.html
-        var candidates = new[]
-        {
-            Path.Combine(AppContext.BaseDirectory, "jellyfin-web", "index.html"),
-            Path.Combine(AppContext.BaseDirectory, "..", "jellyfin-web", "index.html"),
-            Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),
-                "Jellyfin", "Server", "jellyfin-web", "index.html"),
-            Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86),
-                "Jellyfin", "Server", "jellyfin-web", "index.html"),
-        };
+        // Build a cross-platform candidate list so production container paths are covered.
+        var candidates = BuildIndexCandidates().Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
 
         foreach (var indexPath in candidates)
         {
@@ -166,7 +157,85 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
             }
         }
 
-        _logger.LogWarning("[Announcements] jellyfin-web/index.html not found — run patch-jellyfin-web.ps1 as Administrator.");
+        _logger.LogWarning(
+            "[Announcements] jellyfin-web/index.html not found in known locations. Set JELLYFIN_WEB_INDEX_PATH or JELLYFIN_WEB_DIR to enable automatic patching.");
+    }
+
+    private IEnumerable<string> BuildIndexCandidates()
+    {
+        var candidates = new List<string>();
+
+        void Add(params string[] parts)
+        {
+            if (parts.Length == 0)
+            {
+                return;
+            }
+
+            candidates.Add(Path.Combine(parts));
+        }
+
+        var envIndex = Environment.GetEnvironmentVariable("JELLYFIN_WEB_INDEX_PATH");
+        if (!string.IsNullOrWhiteSpace(envIndex))
+        {
+            candidates.Add(envIndex);
+        }
+
+        var envWebDir = Environment.GetEnvironmentVariable("JELLYFIN_WEB_DIR");
+        if (!string.IsNullOrWhiteSpace(envWebDir))
+        {
+            Add(envWebDir, "index.html");
+        }
+
+        Add(AppContext.BaseDirectory, "jellyfin-web", "index.html");
+        Add(AppContext.BaseDirectory, "jellyfin-web", "dist", "index.html");
+        Add(AppContext.BaseDirectory, "web", "index.html");
+        Add(AppContext.BaseDirectory, "web", "dist", "index.html");
+        Add(AppContext.BaseDirectory, "..", "jellyfin-web", "index.html");
+        Add(AppContext.BaseDirectory, "..", "jellyfin-web", "dist", "index.html");
+        Add(AppContext.BaseDirectory, "..", "web", "index.html");
+        Add(AppContext.BaseDirectory, "..", "web", "dist", "index.html");
+
+        var contentRoot = Environment.GetEnvironmentVariable("ASPNETCORE_CONTENTROOT");
+        if (!string.IsNullOrWhiteSpace(contentRoot))
+        {
+            Add(contentRoot, "jellyfin-web", "index.html");
+            Add(contentRoot, "jellyfin-web", "dist", "index.html");
+            Add(contentRoot, "web", "index.html");
+            Add(contentRoot, "web", "dist", "index.html");
+        }
+
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+            var programFiles = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
+            var programFilesX86 = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86);
+
+            if (!string.IsNullOrWhiteSpace(programFiles))
+            {
+                Add(programFiles, "Jellyfin", "Server", "jellyfin-web", "index.html");
+                Add(programFiles, "Jellyfin", "Server", "web", "index.html");
+            }
+
+            if (!string.IsNullOrWhiteSpace(programFilesX86))
+            {
+                Add(programFilesX86, "Jellyfin", "Server", "jellyfin-web", "index.html");
+                Add(programFilesX86, "Jellyfin", "Server", "web", "index.html");
+            }
+        }
+        else
+        {
+            // Common Linux/macOS and container locations.
+            Add("/usr/share/jellyfin/web/index.html");
+            Add("/usr/share/jellyfin/jellyfin-web/index.html");
+            Add("/usr/lib/jellyfin/bin/jellyfin-web/index.html");
+            Add("/usr/lib/jellyfin/bin/web/index.html");
+            Add("/jellyfin/jellyfin-web/index.html");
+            Add("/jellyfin/web/index.html");
+            Add("/Applications/Jellyfin.app/Contents/Resources/jellyfin-web/index.html");
+            Add("/Applications/Jellyfin.app/Contents/Resources/web/index.html");
+        }
+
+        return candidates;
     }
 
     private void RegisterWithJsInjector()
