@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <Version>0.2.0.0</Version>
+    <AssemblyVersion>0.2.0.0</AssemblyVersion>
+    <FileVersion>0.2.0.0</FileVersion>
+    <Authors>BLCKSNAKE</Authors>
+    <Company>BLCKSNAKE</Company>
+    <AssemblyName>Jellyfin.Plugin.Announcements</AssemblyName>
+    <RootNamespace>Jellyfin.Plugin.Announcements</RootNamespace>
+    <!-- Class Library: Jellyfin loads the DLL, no Exe entry point -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Jellyfin.Controller" Version="10.11.6" />
+    <PackageReference Include="Jellyfin.Model" Version="10.11.6" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Abstractions" Version="2.2.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+  </ItemGroup>
+
+  <!-- Embed the admin web page inside the DLL -->
+  <ItemGroup>
+    <EmbeddedResource Include="Web\configPage.html" />
+    <EmbeddedResource Include="Web\announcement.js" />
+    <EmbeddedResource Include="Web\announcement.css" />
+  </ItemGroup>
+</Project>

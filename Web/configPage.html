@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>Announcements</title>
+</head>
+<body>
+<div id="AnnouncementsConfigPage"
+     data-role="page"
+     class="page type-interior pluginConfigurationPage"
+     data-require="emby-input,emby-button,emby-select">
+    <div data-role="content">
+        <div class="content-primary">
+            <form id="AnnouncementsForm">
+                <div class="sectionTitleContainer flex align-items-center">
+                    <h2 class="sectionTitle">Announcements</h2>
+                </div>
+
+                <div class="inputContainer">
+                    <label class="inputLabel inputLabelUnfocused" for="Title">Title</label>
+                    <input id="Title" type="text" is="emby-input" required />
+                </div>
+
+                <div class="inputContainer">
+                    <label class="inputLabel inputLabelUnfocused" for="Message">Message</label>
+                    <textarea id="Message" style="width:100%;min-height:96px;resize:vertical" required></textarea>
+                </div>
+
+                <div class="selectContainer">
+                    <label class="selectLabel" for="Level">Severity</label>
+                    <select id="Level" is="emby-select" class="emby-select-withcolor emby-select">
+                        <option value="info">Info</option>
+                        <option value="warning">Warning</option>
+                        <option value="danger">Critical</option>
+                    </select>
+                    <div class="secondaryText" style="margin-top:6px;">Info = blue, Warning = amber, Critical = red.</div>
+                </div>
+
+                <div class="inputContainer">
+                    <label class="inputLabel inputLabelUnfocused" for="StartsAt">Starts At</label>
+                    <input id="StartsAt" type="datetime-local" is="emby-input" required />
+                </div>
+
+                <div class="inputContainer">
+                    <label class="inputLabel inputLabelUnfocused" for="EndsAt">Ends At (optional)</label>
+                    <input id="EndsAt" type="datetime-local" is="emby-input" />
+                </div>
+
+                <div class="inputContainer" style="margin-bottom:8px;">
+                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+                        <input id="AnnouncementShowOnLoginPage" type="checkbox" />
+                        Show this announcement on the login page
+                    </label>
+                </div>
+
+                <div class="inputContainer" style="margin-bottom:8px;">
+                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+                        <input id="AllowDismiss" type="checkbox" checked />
+                        Allow users to dismiss this announcement
+                    </label>
+                </div>
+
+                <div class="selectContainer" style="margin-bottom:12px;">
+                    <label class="selectLabel" for="DismissMode">Dismiss behavior</label>
+                    <select id="DismissMode" is="emby-select" class="emby-select-withcolor emby-select">
+                        <option value="permanent" selected>Remember dismissal on this browser</option>
+                        <option value="session">Dismiss only for this session</option>
+                    </select>
+                    <div class="secondaryText" style="margin-top:6px;">For a permanent message, uncheck "Allow users to dismiss this announcement".</div>
+                </div>
+
+                <div style="display:flex;gap:10px;align-items:center;">
+                    <button id="SaveBtn" is="emby-button" type="submit" class="raised button-submit block emby-button">
+                        <span>Save Announcement</span>
+                    </button>
+                    <button id="CancelEditBtn" is="emby-button" type="button" class="emby-button" style="display:none;">
+                        <span>Cancel Edit</span>
+                    </button>
+                    <span id="FormModeLabel" class="secondaryText" style="display:none;">Editing announcement</span>
+                </div>
+            </form>
+
+            <div class="verticalSection" style="margin-top:1.5em">
+                <h3>Current Announcements</h3>
+                <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:8px;">
+                    <div class="inputContainer" style="margin:0;min-width:240px;flex:1;">
+                        <label class="inputLabel inputLabelUnfocused" for="SearchText">Search</label>
+                        <input id="SearchText" type="text" is="emby-input" placeholder="Title or message" />
+                    </div>
+                    <div class="selectContainer" style="margin:0;min-width:180px;">
+                        <label class="selectLabel" for="StatusFilter">Status filter</label>
+                        <select id="StatusFilter" is="emby-select" class="emby-select-withcolor emby-select">
+                            <option value="all" selected>All</option>
+                            <option value="active">Active</option>
+                            <option value="scheduled">Scheduled</option>
+                            <option value="expired">Expired</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="AnnouncementsList"></div>
+            </div>
+        </div>
+    </div>
+
+    <script type="text/javascript">
+        (function () {
+            var apiBase = 'Plugins/Announcements';
+            var page = document.querySelector('#AnnouncementsConfigPage');
+            var form = document.querySelector('#AnnouncementsForm');
+            var listEl = document.querySelector('#AnnouncementsList');
+
+            var titleEl = document.querySelector('#Title');
+            var messageEl = document.querySelector('#Message');
+            var levelEl = document.querySelector('#Level');
+            var startsAtEl = document.querySelector('#StartsAt');
+            var endsAtEl = document.querySelector('#EndsAt');
+            var showOnLoginEl = document.querySelector('#AnnouncementShowOnLoginPage');
+            var allowDismissEl = document.querySelector('#AllowDismiss');
+            var dismissModeEl = document.querySelector('#DismissMode');
+            var cancelEditBtn = document.querySelector('#CancelEditBtn');
+            var formModeLabel = document.querySelector('#FormModeLabel');
+            var saveBtnText = document.querySelector('#SaveBtn span');
+            var searchTextEl = document.querySelector('#SearchText');
+            var statusFilterEl = document.querySelector('#StatusFilter');
+
+            var editingId = null;
+            var allItems = [];
+
+            function apiUrl(path) {
+                return ApiClient.getUrl(path);
+            }
+
+            function authHeaders(extra) {
+                var headers = { 'X-Emby-Token': ApiClient.accessToken() };
+                if (extra) {
+                    Object.keys(extra).forEach(function (key) { headers[key] = extra[key]; });
+                }
+                return headers;
+            }
+
+            function esc(value) {
+                var s = (value || '').toString();
+                return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            }
+
+            function pad2(n) {
+                return String(n).padStart(2, '0');
+            }
+
+            function toDateTimeLocalValue(d) {
+                return d.getFullYear() + '-' +
+                    pad2(d.getMonth() + 1) + '-' +
+                    pad2(d.getDate()) + 'T' +
+                    pad2(d.getHours()) + ':' +
+                    pad2(d.getMinutes());
+            }
+
+            function fromLocalInput(value) {
+                if (!value) return null;
+                var d = new Date(value);
+                return isNaN(d.getTime()) ? null : d.toISOString();
+            }
+
+            function toLocalInput(value) {
+                if (!value) return '';
+                var d = new Date(value);
+                if (isNaN(d.getTime())) return '';
+                d.setSeconds(0, 0);
+                return toDateTimeLocalValue(d);
+            }
+
+            function levelTag(level) {
+                var color = level === 'danger' ? '#d32f2f' : (level === 'warning' ? '#f9a825' : '#1976d2');
+                return '<span style="display:inline-block;padding:2px 8px;border-radius:12px;background:' + color + ';color:#fff;font-size:12px">' + esc((level || 'info').toUpperCase()) + '</span>';
+            }
+
+            function getStatus(a) {
+                var now = new Date();
+                var starts = new Date(a.startsAt);
+                var ends = a.endsAt ? new Date(a.endsAt) : null;
+                if (!isNaN(starts.getTime()) && now < starts) return 'scheduled';
+                if (ends && !isNaN(ends.getTime()) && now > ends) return 'expired';
+                return 'active';
+            }
+
+            function statusTag(status) {
+                var color = status === 'active' ? '#2e7d32' : (status === 'scheduled' ? '#455a64' : '#6d4c41');
+                return '<span style="display:inline-block;padding:2px 8px;border-radius:12px;background:' + color + ';color:#fff;font-size:12px;text-transform:uppercase;">' + esc(status) + '</span>';
+            }
+
+            function showStatus(text, isError) {
+                if (isError) {
+                    Dashboard.alert({ title: 'Announcements', message: text });
+                } else {
+                    try {
+                        require(['toast'], function (toast) { toast({ text: text }); });
+                    } catch (e) {
+                        console.info('[Announcements]', text);
+                    }
+                }
+            }
+
+            function syncDismissUi() {
+                dismissModeEl.disabled = !allowDismissEl.checked;
+                dismissModeEl.style.opacity = allowDismissEl.checked ? '1' : '0.55';
+            }
+
+            function resetForm(keepTimes) {
+                editingId = null;
+                titleEl.value = '';
+                messageEl.value = '';
+                levelEl.value = 'info';
+                if (!keepTimes) {
+                    var now = new Date();
+                    now.setSeconds(0, 0);
+                    startsAtEl.value = toDateTimeLocalValue(now);
+                }
+                endsAtEl.value = '';
+                showOnLoginEl.checked = false;
+                allowDismissEl.checked = true;
+                dismissModeEl.value = 'permanent';
+                syncDismissUi();
+
+                cancelEditBtn.style.display = 'none';
+                formModeLabel.style.display = 'none';
+                saveBtnText.textContent = 'Save Announcement';
+            }
+
+            function beginEdit(item) {
+                editingId = item.id;
+                titleEl.value = item.title || '';
+                messageEl.value = item.message || '';
+                levelEl.value = item.level || 'info';
+                startsAtEl.value = toLocalInput(item.startsAt);
+                endsAtEl.value = toLocalInput(item.endsAt);
+                showOnLoginEl.checked = !!item.showOnLoginPage;
+                allowDismissEl.checked = item.allowDismiss !== false;
+                dismissModeEl.value = item.dismissMode || 'permanent';
+                syncDismissUi();
+
+                cancelEditBtn.style.display = 'inline-flex';
+                formModeLabel.style.display = 'inline';
+                saveBtnText.textContent = 'Update Announcement';
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+
+            function getFilteredItems(items) {
+                var query = (searchTextEl.value || '').trim().toLowerCase();
+                var statusFilter = statusFilterEl.value || 'all';
+
+                return items.filter(function (a) {
+                    var status = getStatus(a);
+                    if (statusFilter !== 'all' && status !== statusFilter) return false;
+
+                    if (!query) return true;
+                    var hay = ((a.title || '') + ' ' + (a.message || '')).toLowerCase();
+                    return hay.indexOf(query) >= 0;
+                });
+            }
+
+            function renderList(items) {
+                var filtered = getFilteredItems(items);
+                if (!filtered.length) {
+                    listEl.innerHTML = '<div class="secondaryText">No announcements match the current filter.</div>';
+                    return;
+                }
+
+                listEl.innerHTML = filtered.map(function (announcement) {
+                    var starts = new Date(announcement.startsAt).toLocaleString();
+                    var ends = announcement.endsAt ? new Date(announcement.endsAt).toLocaleString() : 'No expiry';
+                    var scope = announcement.showOnLoginPage ? 'Login + app' : 'App only';
+                    var dismissRule = announcement.allowDismiss === false ? 'Not dismissible' : ('Dismiss: ' + (announcement.dismissMode || 'permanent'));
+                    var status = getStatus(announcement);
+
+                    return '<div class="card" style="padding:12px;margin:8px 0">' +
+                        '<div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start">' +
+                        '<div>' +
+                        '<div style="display:flex;gap:6px;flex-wrap:wrap">' + levelTag(announcement.level) + statusTag(status) + '</div>' +
+                        '<div style="font-weight:600;margin-top:8px">' + esc(announcement.title) + '</div>' +
+                        '<div class="secondaryText" style="margin-top:4px">' + esc(announcement.message) + '</div>' +
+                        '<div class="secondaryText" style="margin-top:8px">Starts: ' + esc(starts) + ' | Ends: ' + esc(ends) + '</div>' +
+                        '<div class="secondaryText" style="margin-top:4px">Scope: ' + esc(scope) + ' | ' + esc(dismissRule) + '</div>' +
+                        '</div>' +
+                        '<div style="white-space:nowrap;display:flex;gap:6px;">' +
+                        '<button is="emby-button" class="raised emby-button editBtn" style="background:#546e7a;color:#fff;" data-id="' + esc(announcement.id) + '"><span>Edit</span></button>' +
+                        '<button is="emby-button" class="raised button-submit emby-button deleteBtn" data-id="' + esc(announcement.id) + '"><span>Delete</span></button>' +
+                        '</div></div></div>';
+                }).join('');
+
+                Array.prototype.forEach.call(listEl.querySelectorAll('.editBtn'), function (btn) {
+                    btn.addEventListener('click', function (ev) {
+                        ev.preventDefault();
+                        var id = btn.getAttribute('data-id');
+                        var item = allItems.find(function (x) { return x.id === id; });
+                        if (item) beginEdit(item);
+                    });
+                });
+
+                Array.prototype.forEach.call(listEl.querySelectorAll('.deleteBtn'), function (btn) {
+                    btn.addEventListener('click', function (ev) {
+                        ev.preventDefault();
+                        deleteAnnouncement(btn.getAttribute('data-id'));
+                    });
+                });
+            }
+
+            function loadAnnouncements() {
+                Dashboard.showLoadingMsg();
+                fetch(apiUrl(apiBase + '/Admin'), { headers: authHeaders() })
+                    .then(function (response) {
+                        Dashboard.hideLoadingMsg();
+                        if (!response.ok) {
+                            showStatus('Failed to load announcements (HTTP ' + response.status + ').', true);
+                            return;
+                        }
+
+                        return response.json().then(function (items) {
+                            allItems = items || [];
+                            renderList(allItems);
+                        });
+                    })
+                    .catch(function () {
+                        Dashboard.hideLoadingMsg();
+                        showStatus('Failed to load announcements.', true);
+                    });
+            }
+
+            function deleteAnnouncement(id) {
+                if (!id) {
+                    return;
+                }
+
+                Dashboard.confirm('Delete this announcement?', 'Delete', function (confirmed) {
+                    if (!confirmed) {
+                        return;
+                    }
+
+                    Dashboard.showLoadingMsg();
+                    fetch(apiUrl(apiBase + '/Admin/' + encodeURIComponent(id)), {
+                        method: 'DELETE',
+                        headers: authHeaders()
+                    })
+                        .then(function (response) {
+                            Dashboard.hideLoadingMsg();
+                            if (!response.ok) {
+                                showStatus('Delete failed (HTTP ' + response.status + ').', true);
+                                return;
+                            }
+
+                            if (editingId === id) {
+                                resetForm(true);
+                            }
+
+                            showStatus('Announcement deleted.');
+                            loadAnnouncements();
+                        })
+                        .catch(function () {
+                            Dashboard.hideLoadingMsg();
+                            showStatus('Delete failed.', true);
+                        });
+                });
+            }
+
+            page.addEventListener('pageshow', function () {
+                resetForm(false);
+                loadAnnouncements();
+            });
+
+            cancelEditBtn.addEventListener('click', function () {
+                resetForm(true);
+            });
+
+            allowDismissEl.addEventListener('change', function () {
+                syncDismissUi();
+            });
+
+            searchTextEl.addEventListener('input', function () {
+                renderList(allItems);
+            });
+
+            statusFilterEl.addEventListener('change', function () {
+                renderList(allItems);
+            });
+
+            form.addEventListener('submit', function (e) {
+                e.preventDefault();
+
+                var payload = {
+                    title: titleEl.value.trim(),
+                    message: messageEl.value.trim(),
+                    level: levelEl.value,
+                    startsAt: fromLocalInput(startsAtEl.value) || new Date().toISOString(),
+                    endsAt: fromLocalInput(endsAtEl.value),
+                    showOnLoginPage: !!showOnLoginEl.checked,
+                    allowDismiss: !!allowDismissEl.checked,
+                    dismissMode: dismissModeEl.value || 'permanent'
+                };
+
+                if (editingId) {
+                    payload.id = editingId;
+                }
+
+                if (!payload.title || !payload.message) {
+                    showStatus('Title and message are required.', true);
+                    return false;
+                }
+
+                Dashboard.showLoadingMsg();
+                fetch(apiUrl(apiBase + '/Admin'), {
+                    method: 'POST',
+                    headers: authHeaders({ 'Content-Type': 'application/json' }),
+                    body: JSON.stringify(payload)
+                })
+                    .then(function (response) {
+                        Dashboard.hideLoadingMsg();
+                        if (!response.ok) {
+                            return response.text().then(function (body) {
+                                showStatus('Save failed (HTTP ' + response.status + ')' + (body ? ': ' + body.slice(0, 200) : '') + '.', true);
+                            });
+                        }
+
+                        showStatus(editingId ? 'Announcement updated!' : 'Announcement saved!');
+                        resetForm(true);
+                        loadAnnouncements();
+                    })
+                    .catch(function (err) {
+                        Dashboard.hideLoadingMsg();
+                        showStatus('Save failed: ' + (err && err.message ? err.message : 'network error'), true);
+                    });
+
+                return false;
+            });
+        })();
+    </script>
+</div>
+</body>
+</html>

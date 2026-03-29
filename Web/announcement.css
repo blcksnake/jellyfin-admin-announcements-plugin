@@ -1,0 +1,113 @@
+.jf-announcement-container {
+  position: fixed;
+  top: 76px;
+  right: 16px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: min(440px, calc(100vw - 24px));
+  pointer-events: none;
+}
+
+.jf-announcement {
+  pointer-events: auto;
+  border-radius: 12px;
+  padding: 12px 14px;
+  color: #eef4ff;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.42);
+  animation: jf-announcement-in 220ms ease-out;
+}
+
+.jf-announcement-info {
+  background: linear-gradient(135deg, #1b74b6 0%, #105287 100%);
+}
+
+.jf-announcement-warning {
+  background: linear-gradient(135deg, #996600 0%, #7c4e00 100%);
+}
+
+.jf-announcement-danger {
+  background: linear-gradient(135deg, #9b1b2f 0%, #6d1025 100%);
+}
+
+.jf-announcement-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.jf-announcement-chip {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 700;
+  padding: 3px 9px;
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+}
+
+.jf-announcement-title {
+  margin: 0;
+  font-size: 17px;
+  line-height: 1.25;
+  font-weight: 700;
+  color: #fff;
+}
+
+.jf-announcement-message {
+  margin: 7px 0 0;
+  font-size: 14px;
+  line-height: 1.4;
+  color: #e7efff;
+}
+
+.jf-announcement-close {
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.jf-announcement-close:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.jf-announcement-meta {
+  margin-top: 8px;
+  font-size: 12px;
+  opacity: 0.88;
+}
+
+@keyframes jf-announcement-in {
+  from {
+    transform: translateY(-8px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@media (max-width: 700px) {
+  .jf-announcement-container {
+    top: 64px;
+    left: 10px;
+    right: 10px;
+    width: auto;
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "category": "Notifications",
+  "changelog": "Improved admin UX, fixed edit/save visibility and dismiss behavior, simplified model to severity-only.",
+  "description": "Server-wide announcements and maintenance banners. Admins create alerts; users see dismissible banners.",
+  "guid": "b0f1f4f0-3f5a-4a9b-9a0b-a11c0ce00001",
+  "imageUrl": "",
+  "name": "Announcements",
+  "overview": "Display admin announcements to all users in the web UI.",
+  "owner": "BLCKSNAKE",
+  "targetAbi": "10.11.0.0",
+  "timestamp": "2026-03-29T00:00:00Z",
+  "version": "0.2.0.0"
+}
