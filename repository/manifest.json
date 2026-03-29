@@ -4,8 +4,8 @@
                      {
                          "changelog":  "Improved admin UX, fixed edit/save visibility and dismiss behavior, simplified model to severity-only.",
                          "version":  "0.2.0.0",
-                         "checksum":  "38f4f15084705111b630a8fe51e1ca43",
-                         "timestamp":  "2026-03-29T07:53:16Z",
+                         "checksum":  "7e777711cc1862774a3632963dce7679",
+                         "timestamp":  "2026-03-29T19:35:16Z",
                          "targetAbi":  "10.11.0.0",
                          "sourceUrl":  "https://github.com/blcksnake/jellyfin-admin-announcements-plugin/releases/download/v0.2.0.0/Announcements_0.2.0.0.zip"
                      }
