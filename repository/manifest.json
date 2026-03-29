@@ -2,12 +2,12 @@
     "owner":  "BLCKSNAKE",
     "versions":  [
                      {
-                         "changelog":  "Added Linux/container-safe web injection path handling, fixed release/build scripting for mixed sln/csproj repos, and validated banner loading in Docker Jellyfin test environment.",
-                         "version":  "0.2.0.1",
-                         "checksum":  "4eda0e960c78c827897d3b16220b26bb",
-                         "timestamp":  "2026-03-29T22:27:15Z",
+                         "changelog":  "Improved production injection diagnostics with explicit startup failure guidance when neither JS Injector nor index patch fallback can inject the banner script, and documented JS Injector-first prerequisites for Linux/container reliability.",
+                         "version":  "0.2.0.2",
+                         "checksum":  "2df1441208ec1956e9d41edf473b48bf",
+                         "timestamp":  "2026-03-29T22:42:15Z",
                          "targetAbi":  "10.11.0.0",
-                         "sourceUrl":  "https://github.com/blcksnake/jellyfin-admin-announcements-plugin/releases/download/v0.2.0.1/Announcements_0.2.0.1.zip"
+                         "sourceUrl":  "https://github.com/blcksnake/jellyfin-admin-announcements-plugin/releases/download/v0.2.0.2/Announcements_0.2.0.2.zip"
                      }
                  ],
     "overview":  "Display admin announcements to all users in the web UI.",

@@ -41,8 +41,14 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
         Store = new AnnouncementStore(applicationPaths);
         _runtimeSettingsPath = Path.Combine(applicationPaths.DataPath, "announcements.settings.json");
         _runtimeSettings = LoadRuntimeSettings();
-        PatchJellyfinWebIndex();
-        RegisterWithJsInjector();
+        var indexPatched = PatchJellyfinWebIndex();
+        var jsInjectorRegistered = RegisterWithJsInjector();
+
+        if (!indexPatched && !jsInjectorRegistered)
+        {
+            _logger.LogError(
+                "[Announcements] Banner script was not injected. Install/enable JavaScript Injector, or set JELLYFIN_WEB_INDEX_PATH/JELLYFIN_WEB_DIR to a writable jellyfin-web index path.");
+        }
     }
 
     public static Plugin? Instance { get; private set; }
@@ -120,7 +126,7 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
         };
     }
 
-    private void PatchJellyfinWebIndex()
+    private bool PatchJellyfinWebIndex()
     {
         const string ScriptTag = "<script src=\"/Plugins/Announcements/banner.js\" defer></script>";
         const string Marker = "Plugins/Announcements/banner.js";
@@ -139,7 +145,7 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
                 if (content.Contains(Marker))
                 {
                     _logger.LogInformation("[Announcements] index.html already patched at {Path}", full);
-                    return;
+                    return true;
                 }
 
                 // Back up once
@@ -149,7 +155,7 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
                 content = content.Replace("</body>", ScriptTag + "\n</body>", StringComparison.OrdinalIgnoreCase);
                 File.WriteAllText(full, content, System.Text.Encoding.UTF8);
                 _logger.LogInformation("[Announcements] Patched {Path} — banners will auto-load on every page.", full);
-                return;
+                return true;
             }
             catch (Exception ex)
             {
@@ -159,6 +165,7 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
 
         _logger.LogWarning(
             "[Announcements] jellyfin-web/index.html not found in known locations. Set JELLYFIN_WEB_INDEX_PATH or JELLYFIN_WEB_DIR to enable automatic patching.");
+        return false;
     }
 
     private IEnumerable<string> BuildIndexCandidates()
@@ -238,7 +245,7 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
         return candidates;
     }
 
-    private void RegisterWithJsInjector()
+    private bool RegisterWithJsInjector()
     {
         try
         {
@@ -249,14 +256,14 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
             if (jsInjectorAssembly is null)
             {
                 _logger.LogInformation("[Announcements] JS Injector plugin not found; banner auto-injection disabled.");
-                return;
+                return false;
             }
 
             var pluginInterfaceType = jsInjectorAssembly.GetType("Jellyfin.Plugin.JavaScriptInjector.PluginInterface");
             if (pluginInterfaceType is null)
             {
                 _logger.LogWarning("[Announcements] JS Injector PluginInterface type not found.");
-                return;
+                return false;
             }
 
             var resourceName = "Jellyfin.Plugin.Announcements.Web.announcement.js";
@@ -266,7 +273,7 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
                 if (stream is null)
                 {
                     _logger.LogWarning("[Announcements] Embedded resource '{Resource}' not found.", resourceName);
-                    return;
+                    return false;
                 }
 
                 using var reader = new StreamReader(stream);
@@ -287,13 +294,14 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
 
             pluginInterfaceType.GetMethod("RegisterScript")?.Invoke(null, new object?[] { payload });
             _logger.LogInformation("[Announcements] Banner script registered with JS Injector.");
+            return true;
         }
         catch (TargetInvocationException ex) when (ex.InnerException is InvalidOperationException)
         {
             if (_retryCount >= MaxRetries)
             {
                 _logger.LogWarning("[Announcements] JS Injector not ready after {MaxRetries} retries.", MaxRetries);
-                return;
+                return false;
             }
 
             _retryCount++;
@@ -303,10 +311,12 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
                 await Task.Delay(TimeSpan.FromSeconds(5)).ConfigureAwait(false);
                 RegisterWithJsInjector();
             });
+            return true;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "[Announcements] Failed to register script with JS Injector.");
+            return false;
         }
     }
 }

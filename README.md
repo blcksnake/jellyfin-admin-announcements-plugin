@@ -4,7 +4,7 @@ Server-wide announcements and maintenance banners for Jellyfin.
 
 ## Status
 
-- Version: 0.2.0.0
+- Version: 0.2.0.2
 - Target Jellyfin ABI: 10.11.0.0
 - Framework: .NET 9
 
@@ -38,6 +38,18 @@ Steps:
 
 No manual file copy and no local build is required for end users.
 
+## Prerequisites
+
+For the most reliable cross-platform injection path (especially Linux containers), install these first:
+
+1. JavaScript Injector plugin (recommended and supported by this plugin).
+2. File Transformation plugin if your JS Injector build requires it.
+
+The Announcements plugin will try both methods at startup:
+
+- JS Injector registration (preferred)
+- Direct jellyfin-web index patching (fallback when web files are writable)
+
 ## Maintainers
 
 For release packaging and repository publishing workflow, see DISTRIBUTION.md.
@@ -49,7 +61,11 @@ For release packaging and repository publishing workflow, see DISTRIBUTION.md.
 - Optional overrides for non-standard installs:
 	- `JELLYFIN_WEB_INDEX_PATH` (full path to `index.html`)
 	- `JELLYFIN_WEB_DIR` (directory containing `index.html`)
-- If announcements do not appear, restart Jellyfin and hard refresh browser.
+- If announcements do not appear:
+	1. Confirm JavaScript Injector is installed and active.
+	2. Restart Jellyfin and hard refresh browser.
+	3. Check logs for injection status lines from `[Announcements]`.
+	4. If using index patch fallback, ensure the target index path is writable.
 
 ## Contributing
 

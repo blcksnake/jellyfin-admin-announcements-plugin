@@ -2,7 +2,7 @@
 # Builds publish output and creates a clean zip for GitHub/Jellyfin repository distribution.
 
 param(
-    [string]$Version = "0.2.0.0",
+    [string]$Version = "0.2.0.2",
     [switch]$SkipBuild
 )
 

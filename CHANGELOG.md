@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## 0.2.0.2 - 2026-03-29
+
+- Added explicit startup injection outcome handling and error logging when both JS Injector registration and index patch fallback fail.
+- Refactored injection methods to return success/failure, improving operational diagnostics in production logs.
+- Updated README prerequisites and troubleshooting to recommend JS Injector-first setup for Linux/container deployments.
+
 ## 0.2.0.1 - 2026-03-29
 
 - Added cross-platform web index candidate detection for Linux/macOS/container layouts.
