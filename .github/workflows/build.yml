@@ -11,18 +11,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         with:
           dotnet-version: "9.0.x"
 
       - name: Restore
-        run: dotnet restore
+        run: dotnet restore Jellyfin.Plugin.Announcements.csproj
 
       - name: Build
-        run: dotnet build -c Release --no-restore
+        run: dotnet build Jellyfin.Plugin.Announcements.csproj -c Release --no-restore
 
       - name: Publish
-        run: dotnet publish -c Release -o publish --no-build
+        run: dotnet publish Jellyfin.Plugin.Announcements.csproj -c Release -o publish --no-build
