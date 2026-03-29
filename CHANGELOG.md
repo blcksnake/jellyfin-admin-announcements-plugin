@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## 0.2.0.1 - 2026-03-29
+
+- Added cross-platform web index candidate detection for Linux/macOS/container layouts.
+- Added support for `JELLYFIN_WEB_INDEX_PATH` and `JELLYFIN_WEB_DIR` environment overrides.
+- Fixed release script publish target ambiguity when both `.sln` and `.csproj` are present.
+- Added Docker-based Linux Jellyfin test environment and validated banner endpoints/injection.
+
 ## 0.2.0.0 - 2026-03-29
 
 - Simplified admin model to severity-only (Info, Warning, Critical).
