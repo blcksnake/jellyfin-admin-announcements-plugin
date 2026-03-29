@@ -18,67 +18,34 @@ Server-wide announcements and maintenance banners for Jellyfin.
 - Dismiss behavior: session or permanent
 - Auto-load banner script support through index patching
 
-## Install (Manual)
+## Easy Install
 
-1. Build publish output:
+Install directly from Jellyfin using a custom repository URL.
 
-   dotnet publish -c Release -o publish
+Repository URL to add in Jellyfin:
 
-2. Copy these files into your Jellyfin plugin folder:
+- https://raw.githubusercontent.com/blcksnake/jellyfin-admin-announcements-plugin/main/repository/manifest.json
 
-- Jellyfin.Plugin.Announcements.dll
-- Jellyfin.Plugin.Announcements.deps.json
-- Newtonsoft.Json.dll
-- meta.json
+Steps:
 
-Folder format should be:
+1. Open Jellyfin Dashboard.
+2. Go to Plugins.
+3. Open Repositories.
+4. Add new repository URL using the link above.
+5. Go to Catalog and install Announcements.
+6. Restart Jellyfin.
+7. Hard refresh browser with Ctrl+Shift+R.
 
-- Announcements_<version>
+No manual file copy and no local build is required for end users.
 
-Example:
+## Maintainers
 
-- C:/Users/<user>/AppData/Local/Jellyfin/plugins/Announcements_0.2.0.0
-
-3. Restart Jellyfin.
-4. Hard-refresh browser (Ctrl+Shift+R).
-
-## Install (Script)
-
-Run the deployment helper on the Jellyfin host:
-
-powershell -ExecutionPolicy Bypass -File ./deploy-to-jellyfin.ps1
-
-## Build
-
-- dotnet build -c Release
-- dotnet publish -c Release -o publish
-
-## Release Bundle
-
-A clean distribution bundle is generated under:
-
-- release/Announcements_0.2.0.0/
-- release/Announcements_0.2.0.0.zip
-
-## Repository Install (No Compile Needed)
-
-You can host this plugin in a Jellyfin repository so users install directly from Jellyfin.
-
-1. Upload `release/Announcements_0.2.0.0.zip` to a public URL (for example, a GitHub Release asset).
-2. Generate `repository/manifest.json`:
-
-   powershell -ExecutionPolicy Bypass -File ./build-repository-manifest.ps1 -SourceUrl "https://github.com/blcksnake/jellyfin-admin-announcements-plugin/releases/download/v0.2.0.0/Announcements_0.2.0.0.zip"
-
-3. Host `repository/manifest.json` at a stable raw URL.
-   Example: `https://raw.githubusercontent.com/blcksnake/jellyfin-admin-announcements-plugin/main/repository/manifest.json`
-4. In Jellyfin: `Dashboard > Plugins > Repositories > +` and paste that manifest URL.
-
-This allows end users to install/update without building from source.
+For release packaging and repository publishing workflow, see DISTRIBUTION.md.
 
 ## Compatibility Notes
 
 - Plugin is tested with Jellyfin 10.11.6.
-- If announcements do not appear, verify index patching and browser hard refresh.
+- If announcements do not appear, restart Jellyfin and hard refresh browser.
 
 ## Contributing
 
