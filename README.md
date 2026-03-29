@@ -18,6 +18,10 @@ Server-wide announcements and maintenance banners for Jellyfin.
 - Dismiss behavior: session or permanent
 - Auto-load banner script support through index patching
 
+## Screenshot
+
+![Announcements plugin screenshot](docs/images/plugin-screenshot.png)
+
 ## Easy Install
 
 Install directly from Jellyfin using a custom repository URL.
