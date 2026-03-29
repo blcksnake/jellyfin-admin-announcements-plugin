@@ -4,8 +4,8 @@
                      {
                          "changelog":  "Improved admin UX, fixed edit/save visibility and dismiss behavior, simplified model to severity-only.",
                          "version":  "0.2.0.0",
-                         "checksum":  "7f52d40cea0d6a6c59703051b11ecfbf4cc74c6466c466288e0d2e37a4c5c191",
-                         "timestamp":  "2026-03-29T07:19:52Z",
+                         "checksum":  "38f4f15084705111b630a8fe51e1ca43",
+                         "timestamp":  "2026-03-29T07:53:16Z",
                          "targetAbi":  "10.11.0.0",
                          "sourceUrl":  "https://github.com/blcksnake/jellyfin-admin-announcements-plugin/releases/download/v0.2.0.0/Announcements_0.2.0.0.zip"
                      }
@@ -17,4 +17,3 @@
     "description":  "Server-wide announcements and maintenance banners. Admins create alerts; users see dismissible banners.",
     "imageUrl":  ""
 }]
-

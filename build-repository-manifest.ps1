@@ -19,7 +19,7 @@ if (-not (Test-Path $metaPath)) {
 }
 
 $meta = Get-Content $metaPath -Raw | ConvertFrom-Json
-$checksum = (Get-FileHash -Path $ZipPath -Algorithm SHA256).Hash.ToLowerInvariant()
+$checksum = (Get-FileHash -Path $ZipPath -Algorithm MD5).Hash.ToLowerInvariant()
 
 $outputDir = Split-Path -Parent $OutputPath
 if (-not [string]::IsNullOrWhiteSpace($outputDir) -and -not (Test-Path $outputDir)) {
@@ -50,4 +50,4 @@ $pluginEntry = @{
 $json = "[" + ($pluginEntry | ConvertTo-Json -Depth 6) + "]"
 Set-Content -Path $OutputPath -Encoding UTF8 -Value $json
 Write-Host "[OK] Wrote Jellyfin repository manifest: $OutputPath" -ForegroundColor Green
-Write-Host "[OK] SHA256: $checksum" -ForegroundColor Green
+Write-Host "[OK] MD5: $checksum" -ForegroundColor Green
