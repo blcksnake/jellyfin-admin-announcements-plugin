@@ -1,13 +1,13 @@
 {
   "category": "Notifications",
-  "changelog": "Added robust path resolution for non-standard Jellyfin installations. Configure custom web paths and enable debug logging via the plugin settings UI. Enhanced path resolution with support for /opt/jellyfin and custom configuration.",
-  "description": "Server-wide announcements and maintenance banners with configurable web path detection for non-standard installations.",
+  "changelog": "Fixed Plugin Settings UI styling - now fully visible with proper dark theme contrast. Improved readability and visual hierarchy of path configuration controls.",
+  "description": "Server-wide announcements and maintenance banners with intuitive path configuration for non-standard installations.",
   "guid": "b0f1f4f0-3f5a-4a9b-9a0b-a11c0ce00001",
   "imageUrl": "",
   "name": "Announcements",
   "overview": "Display admin announcements to all users in the web UI.",
   "owner": "BLCKSNAKE",
   "targetAbi": "10.11.0.0",
-  "timestamp": "2026-03-30T00:00:00Z",
-  "version": "0.2.0.3"
+  "timestamp": "2026-03-30T23:45:00Z",
+  "version": "0.2.0.4"
 }

@@ -1,6 +1,14 @@
 # Changelog
 
-All notable changes to this project will be documented in this file.
+ All notable changes to this project will be documented in this file.
+
+## 0.2.0.4 - 2026-03-30
+
+- **FIX**: Fixed Plugin Settings UI styling - dark theme controls now fully visible
+- Improved text contrast and label visibility for better readability
+- Enhanced visual hierarchy with styled section borders and header
+- Input fields now have proper dark background and border styling
+- Checkbox and button styling improved for clarity and consistency
 
 ## 0.2.0.3 - 2026-03-30
 
