@@ -2,18 +2,18 @@
     "owner":  "BLCKSNAKE",
     "versions":  [
                      {
-                         "changelog":  "Improved production injection diagnostics with explicit startup failure guidance when neither JS Injector nor index patch fallback can inject the banner script, and documented JS Injector-first prerequisites for Linux/container reliability.",
-                         "version":  "0.2.0.2",
-                         "checksum":  "2df1441208ec1956e9d41edf473b48bf",
-                         "timestamp":  "2026-03-29T22:42:15Z",
+                         "changelog":  "Added robust path resolution for non-standard Jellyfin installations. Configure custom web paths and enable debug logging via the plugin settings UI. Enhanced path resolution with support for /opt/jellyfin and custom configuration.",
+                         "version":  "0.2.0.3",
+                         "checksum":  "bd2107906ef5dbd6b97047edaba6127d",
+                         "timestamp":  "2026-03-30T23:34:47Z",
                          "targetAbi":  "10.11.0.0",
-                         "sourceUrl":  "https://github.com/blcksnake/jellyfin-admin-announcements-plugin/releases/download/v0.2.0.2/Announcements_0.2.0.2.zip"
+                         "sourceUrl":  "https://github.com/BLCKSNAKE/jellyfin-admin-announcements-plugin/releases/download/v0.2.0.3/Announcements_0.2.0.3.zip"
                      }
                  ],
     "overview":  "Display admin announcements to all users in the web UI.",
     "category":  "Notifications",
     "guid":  "b0f1f4f0-3f5a-4a9b-9a0b-a11c0ce00001",
     "name":  "Announcements",
-    "description":  "Server-wide announcements and maintenance banners. Admins create alerts; users see dismissible banners.",
+    "description":  "Server-wide announcements and maintenance banners with configurable web path detection for non-standard installations.",
     "imageUrl":  ""
 }]

@@ -24,6 +24,13 @@ public class AnnouncementController : ControllerBase
         public bool ShowOnLoginPage { get; set; }
     }
 
+    public class PathConfigDto
+    {
+        public string? CustomWebPath { get; set; }
+        public string? CustomIndexPath { get; set; }
+        public bool EnablePathLogging { get; set; }
+    }
+
     private static readonly HashSet<string> ValidLevels = new(System.StringComparer.OrdinalIgnoreCase)
     {
         "info",
@@ -169,5 +176,53 @@ public class AnnouncementController : ControllerBase
         if (stream is null)
             return NotFound();
         return File(stream, "text/css");
+    }
+
+    /// <summary>Gets path configuration for troubleshooting jellyfin-web detection.</summary>
+    [HttpGet("Admin/PathConfig")]
+    [Authorize(Policy = "RequiresElevation")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public ActionResult<PathConfigDto> GetPathConfig()
+    {
+        if (Plugin.Instance is null)
+        {
+            return BadRequest("Plugin is not loaded.");
+        }
+
+        return Ok(new PathConfigDto
+        {
+            CustomWebPath = Plugin.Instance.GetCustomWebPath(),
+            CustomIndexPath = Plugin.Instance.GetCustomIndexPath(),
+            EnablePathLogging = Plugin.Instance.GetEnablePathLogging()
+        });
+    }
+
+    /// <summary>Updates path configuration for troubleshooting jellyfin-web detection.</summary>
+    [HttpPost("Admin/PathConfig")]
+    [Authorize(Policy = "RequiresElevation")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public ActionResult<PathConfigDto> SavePathConfig([FromBody] PathConfigDto? settings)
+    {
+        if (settings is null)
+        {
+            return BadRequest("Request body is required.");
+        }
+
+        if (Plugin.Instance is null)
+        {
+            return BadRequest("Plugin is not loaded.");
+        }
+
+        Plugin.Instance.SetCustomWebPath(settings.CustomWebPath);
+        Plugin.Instance.SetCustomIndexPath(settings.CustomIndexPath);
+        Plugin.Instance.SetEnablePathLogging(settings.EnablePathLogging);
+
+        return Ok(new PathConfigDto
+        {
+            CustomWebPath = Plugin.Instance.GetCustomWebPath(),
+            CustomIndexPath = Plugin.Instance.GetCustomIndexPath(),
+            EnablePathLogging = Plugin.Instance.GetEnablePathLogging()
+        });
     }
 }

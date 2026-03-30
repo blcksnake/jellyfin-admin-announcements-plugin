@@ -16,6 +16,31 @@
                     <h2 class="sectionTitle">Announcements</h2>
                 </div>
 
+                <div class="verticalSection" style="margin-bottom:2em;padding:12px;background:#f5f5f5;border-radius:4px;">
+                    <h3>Plugin Settings</h3>
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="CustomWebPath">Custom Web Directory (optional)</label>
+                        <input id="CustomWebPath" type="text" is="emby-input" placeholder="/usr/share/jellyfin/web or /opt/jellyfin/web" />
+                        <div class="secondaryText" style="margin-top:6px;">Leave empty for auto-detection. Path to the jellyfin-web directory containing index.html.</div>
+                    </div>
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="CustomIndexPath">Direct Path to index.html (optional)</label>
+                        <input id="CustomIndexPath" type="text" is="emby-input" placeholder="/usr/share/jellyfin/web/index.html" />
+                        <div class="secondaryText" style="margin-top:6px;">Direct path to index.html file. Takes priority over Custom Web Directory. Leave empty to use web directory setting.</div>
+                    </div>
+                    <div class="inputContainer" style="margin-bottom:8px;">
+                        <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+                            <input id="EnablePathLogging" type="checkbox" />
+                            Enable verbose path resolution logging
+                        </label>
+                        <div class="secondaryText" style="margin-top:4px;">Check this box to enable debug logging for troubleshooting path resolution issues. Check server logs after enabling.</div>
+                    </div>
+                    <button id="SaveSettingsBtn" is="emby-button" type="button" class="raised button-submit emby-button">
+                        <span>Save Settings</span>
+                    </button>
+                    <span id="SettingsMessage" style="margin-left:12px;display:none;"></span>
+                </div>
+
                 <div class="inputContainer">
                     <label class="inputLabel inputLabelUnfocused" for="Title">Title</label>
                     <input id="Title" type="text" is="emby-input" required />
@@ -122,6 +147,12 @@
             var saveBtnText = document.querySelector('#SaveBtn span');
             var searchTextEl = document.querySelector('#SearchText');
             var statusFilterEl = document.querySelector('#StatusFilter');
+
+            var customWebPathEl = document.querySelector('#CustomWebPath');
+            var customIndexPathEl = document.querySelector('#CustomIndexPath');
+            var enablePathLoggingEl = document.querySelector('#EnablePathLogging');
+            var saveSettingsBtn = document.querySelector('#SaveSettingsBtn');
+            var settingsMessageEl = document.querySelector('#SettingsMessage');
 
             var editingId = null;
             var allItems = [];
@@ -364,6 +395,7 @@
             page.addEventListener('pageshow', function () {
                 resetForm(false);
                 loadAnnouncements();
+                loadPathConfig();
             });
 
             cancelEditBtn.addEventListener('click', function () {
@@ -372,6 +404,68 @@
 
             allowDismissEl.addEventListener('change', function () {
                 syncDismissUi();
+            });
+
+            function showSettingsMessage(text, isError) {
+                settingsMessageEl.textContent = text;
+                settingsMessageEl.style.display = 'inline';
+                settingsMessageEl.style.color = isError ? '#d32f2f' : '#2e7d32';
+                setTimeout(function () {
+                    settingsMessageEl.style.display = 'none';
+                }, 4000);
+            }
+
+            function loadPathConfig() {
+                fetch(apiUrl(apiBase + '/Admin/PathConfig'), { headers: authHeaders() })
+                    .then(function (response) {
+                        if (!response.ok) {
+                            console.warn('[Announcements] Failed to load path config');
+                            return;
+                        }
+                        return response.json().then(function (config) {
+                            customWebPathEl.value = config.customWebPath || '';
+                            customIndexPathEl.value = config.customIndexPath || '';
+                            enablePathLoggingEl.checked = !!config.enablePathLogging;
+                        });
+                    })
+                    .catch(function (err) {
+                        console.warn('[Announcements] Error loading path config:', err);
+                    });
+            }
+
+            function savePathConfig() {
+                var payload = {
+                    customWebPath: customWebPathEl.value.trim() || null,
+                    customIndexPath: customIndexPathEl.value.trim() || null,
+                    enablePathLogging: !!enablePathLoggingEl.checked
+                };
+
+                Dashboard.showLoadingMsg();
+                fetch(apiUrl(apiBase + '/Admin/PathConfig'), {
+                    method: 'POST',
+                    headers: authHeaders({ 'Content-Type': 'application/json' }),
+                    body: JSON.stringify(payload)
+                })
+                    .then(function (response) {
+                        Dashboard.hideLoadingMsg();
+                        if (!response.ok) {
+                            return response.text().then(function (body) {
+                                showSettingsMessage('Save failed (HTTP ' + response.status + ')' + (body ? ': ' + body.slice(0, 200) : '') + '.', true);
+                            });
+                        }
+
+                        showSettingsMessage('Settings saved! The server will reload the plugin on next startup.');
+                        loadPathConfig();
+                    })
+                    .catch(function (err) {
+                        Dashboard.hideLoadingMsg();
+                        showSettingsMessage('Save failed: ' + (err && err.message ? err.message : 'network error'), true);
+                    });
+            }
+
+            saveSettingsBtn.addEventListener('click', function (e) {
+                e.preventDefault();
+                savePathConfig();
             });
 
             searchTextEl.addEventListener('input', function () {

@@ -71,6 +71,51 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
         SaveRuntimeSettings();
     }
 
+    /// <summary>Gets current custom web path configuration.</summary>
+    public string? GetCustomWebPath() => Configuration.CustomWebPath;
+
+    /// <summary>Sets custom web path configuration.</summary>
+    public void SetCustomWebPath(string? path)
+    {
+        if (Configuration.CustomWebPath == path)
+        {
+            return;
+        }
+
+        Configuration.CustomWebPath = path;
+        SaveConfiguration();
+    }
+
+    /// <summary>Gets current custom index path configuration.</summary>
+    public string? GetCustomIndexPath() => Configuration.CustomIndexPath;
+
+    /// <summary>Sets custom index path configuration.</summary>
+    public void SetCustomIndexPath(string? path)
+    {
+        if (Configuration.CustomIndexPath == path)
+        {
+            return;
+        }
+
+        Configuration.CustomIndexPath = path;
+        SaveConfiguration();
+    }
+
+    /// <summary>Gets whether verbose path logging is enabled.</summary>
+    public bool GetEnablePathLogging() => Configuration.EnablePathLogging;
+
+    /// <summary>Sets whether verbose path logging is enabled.</summary>
+    public void SetEnablePathLogging(bool enabled)
+    {
+        if (Configuration.EnablePathLogging == enabled)
+        {
+            return;
+        }
+
+        Configuration.EnablePathLogging = enabled;
+        SaveConfiguration();
+    }
+
     public override string Name => "Announcements";
 
     public override Guid Id => Guid.Parse("b0f1f4f0-3f5a-4a9b-9a0b-a11c0ce00001");
@@ -130,16 +175,35 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
     {
         const string ScriptTag = "<script src=\"/Plugins/Announcements/banner.js\" defer></script>";
         const string Marker = "Plugins/Announcements/banner.js";
+        var enableDebugLogging = Configuration.EnablePathLogging;
 
         // Build a cross-platform candidate list so production container paths are covered.
         var candidates = BuildIndexCandidates().Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
+
+        if (enableDebugLogging)
+        {
+            _logger.LogInformation("[Announcements] DEBUG: Searching for index.html in {Count} candidate paths", candidates.Length);
+            foreach (var candidate in candidates)
+            {
+                _logger.LogInformation("[Announcements] DEBUG: Candidate path: {Path}", candidate);
+            }
+        }
 
         foreach (var indexPath in candidates)
         {
             try
             {
                 var full = Path.GetFullPath(indexPath);
-                if (!File.Exists(full)) continue;
+                
+                if (!File.Exists(full))
+                {
+                    if (enableDebugLogging)
+                        _logger.LogDebug("[Announcements] DEBUG: File not found: {Path}", full);
+                    continue;
+                }
+
+                if (enableDebugLogging)
+                    _logger.LogInformation("[Announcements] DEBUG: Found index.html at {Path}", full);
 
                 var content = File.ReadAllText(full, System.Text.Encoding.UTF8);
                 if (content.Contains(Marker))
@@ -164,7 +228,7 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
         }
 
         _logger.LogWarning(
-            "[Announcements] jellyfin-web/index.html not found in known locations. Set JELLYFIN_WEB_INDEX_PATH or JELLYFIN_WEB_DIR to enable automatic patching.");
+            "[Announcements] jellyfin-web/index.html not found. To fix: 1) Install JS Injector plugin, 2) Set env vars JELLYFIN_WEB_INDEX_PATH or JELLYFIN_WEB_DIR, 3) Use plugin config settings for custom paths, or 4) Enable path logging (EnablePathLogging=true in plugin config) to debug.");
         return false;
     }
 
@@ -182,6 +246,19 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
             candidates.Add(Path.Combine(parts));
         }
 
+        // Priority 1: Direct path from plugin configuration (highest priority)
+        if (!string.IsNullOrWhiteSpace(Configuration.CustomIndexPath))
+        {
+            candidates.Add(Configuration.CustomIndexPath);
+        }
+
+        // Priority 2: Custom web directory from plugin configuration
+        if (!string.IsNullOrWhiteSpace(Configuration.CustomWebPath))
+        {
+            Add(Configuration.CustomWebPath, "index.html");
+        }
+
+        // Priority 3: Environment variables (JELLYFIN_WEB_INDEX_PATH takes precedence over CustomIndexPath from env)
         var envIndex = Environment.GetEnvironmentVariable("JELLYFIN_WEB_INDEX_PATH");
         if (!string.IsNullOrWhiteSpace(envIndex))
         {
@@ -194,6 +271,7 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
             Add(envWebDir, "index.html");
         }
 
+        // Priority 4: Relative paths from application directory
         Add(AppContext.BaseDirectory, "jellyfin-web", "index.html");
         Add(AppContext.BaseDirectory, "jellyfin-web", "dist", "index.html");
         Add(AppContext.BaseDirectory, "web", "index.html");
@@ -203,6 +281,7 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
         Add(AppContext.BaseDirectory, "..", "web", "index.html");
         Add(AppContext.BaseDirectory, "..", "web", "dist", "index.html");
 
+        // Priority 5: ASPNETCORE_CONTENTROOT environment variable
         var contentRoot = Environment.GetEnvironmentVariable("ASPNETCORE_CONTENTROOT");
         if (!string.IsNullOrWhiteSpace(contentRoot))
         {
@@ -212,6 +291,7 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
             Add(contentRoot, "web", "dist", "index.html");
         }
 
+        // Priority 6: Windows standard installation paths
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
             var programFiles = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
@@ -231,13 +311,16 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
         }
         else
         {
-            // Common Linux/macOS and container locations.
+            // Priority 7: Common Linux/macOS and container locations.
             Add("/usr/share/jellyfin/web/index.html");
             Add("/usr/share/jellyfin/jellyfin-web/index.html");
             Add("/usr/lib/jellyfin/bin/jellyfin-web/index.html");
             Add("/usr/lib/jellyfin/bin/web/index.html");
             Add("/jellyfin/jellyfin-web/index.html");
             Add("/jellyfin/web/index.html");
+            Add("/opt/jellyfin/web/index.html");
+            Add("/opt/jellyfin/jellyfin-web/index.html");
+            Add("/opt/jellyfin/jellyfin/web/index.html");
             Add("/Applications/Jellyfin.app/Contents/Resources/jellyfin-web/index.html");
             Add("/Applications/Jellyfin.app/Contents/Resources/web/index.html");
         }
