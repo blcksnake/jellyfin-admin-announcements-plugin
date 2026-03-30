@@ -4,7 +4,7 @@ Server-wide announcements and maintenance banners for Jellyfin.
 
 ## Status
 
-- Version: 0.2.0.2
+- Version: 0.2.0.4
 - Target Jellyfin ABI: 10.11.0.0
 - Framework: .NET 9
 
@@ -44,12 +44,12 @@ No manual file copy and no local build is required for end users.
 
 ## Prerequisites
 
-For the most reliable cross-platform injection path (especially Linux containers), install these first:
+No hard prerequisite plugin is required.
 
-1. JavaScript Injector plugin (recommended and supported by this plugin).
-2. File Transformation plugin if your JS Injector build requires it.
+For the most reliable cross-platform script injection (especially Linux containers), JavaScript Injector is recommended.
+Some JavaScript Injector builds may also require File Transformation.
 
-The Announcements plugin will try both methods at startup:
+The Announcements plugin tries both methods at startup:
 
 - JS Injector registration (preferred)
 - Direct jellyfin-web index patching (fallback when web files are writable)
