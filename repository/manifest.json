@@ -4,8 +4,8 @@
                      {
                          "changelog":  "Fixed Plugin Settings UI styling - now fully visible with proper dark theme contrast. Improved readability and visual hierarchy of path configuration controls.",
                          "version":  "0.2.0.4",
-                         "checksum":  "cba33d30c59f84cddc85042f1ff11e6d",
-                         "timestamp":  "2026-03-30T23:42:19Z",
+                         "checksum":  "4573ea7c9c9c719f42b71f4951e9e884",
+                         "timestamp":  "2026-03-30T23:46:05Z",
                          "targetAbi":  "10.11.0.0",
                          "sourceUrl":  "https://github.com/BLCKSNAKE/jellyfin-admin-announcements-plugin/releases/download/v0.2.0.4/Announcements_0.2.0.4.zip"
                      }
