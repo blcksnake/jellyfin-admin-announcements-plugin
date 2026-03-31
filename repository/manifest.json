@@ -2,10 +2,10 @@
     "owner":  "BLCKSNAKE",
     "versions":  [
                      {
-                         "changelog":  "Main Testing Release for v0.2.0.4. Verified repository-based install and update flow, Linux/Docker banner injection compatibility, improved settings UI readability, and non-standard path configuration support.",
+                         "changelog":  "Main Testing Release for v0.2.0.4. Verified repository updates, Linux/Docker deployment, admin announcement UI, login-page support, and writable web-path banner injection for non-standard Jellyfin installs.",
                          "version":  "0.2.0.4",
-                         "checksum":  "4573ea7c9c9c719f42b71f4951e9e884",
-                         "timestamp":  "2026-03-30T23:46:05Z",
+                         "checksum":  "1c8e92fcc20aab1988d5c6de04e57a9d",
+                         "timestamp":  "2026-03-31T01:54:32Z",
                          "targetAbi":  "10.11.0.0",
                          "sourceUrl":  "https://github.com/BLCKSNAKE/jellyfin-admin-announcements-plugin/releases/download/v0.2.0.4/Announcements_0.2.0.4.zip"
                      }
@@ -14,6 +14,6 @@
     "category":  "Notifications",
     "guid":  "b0f1f4f0-3f5a-4a9b-9a0b-a11c0ce00001",
     "name":  "Announcements",
-    "description":  "Server-wide announcements and maintenance banners with intuitive path configuration for non-standard installations.",
+    "description":  "Server-wide announcements and maintenance banners with validated repository updates and configurable path support for non-standard installations.",
     "imageUrl":  ""
 }]
