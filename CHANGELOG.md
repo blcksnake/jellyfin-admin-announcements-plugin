@@ -4,11 +4,12 @@
 
 ## 0.2.0.4 - 2026-03-30
 
-- **FIX**: Fixed Plugin Settings UI styling - dark theme controls now fully visible
-- Improved text contrast and label visibility for better readability
-- Enhanced visual hierarchy with styled section borders and header
-- Input fields now have proper dark background and border styling
-- Checkbox and button styling improved for clarity and consistency
+- **MAIN TESTING RELEASE**: v0.2.0.4 is the primary public testing build for the plugin.
+- Verified repository-based install and update flow for Jellyfin plugin delivery.
+- Confirmed production Linux and Docker deployment support when `jellyfin-web/index.html` is writable by the runtime user.
+- Improved plugin settings UI visibility and readability in the admin panel.
+- Added custom path configuration and verbose path logging for non-standard Jellyfin installs.
+- Validated announcement CRUD, login-page visibility, dismiss behavior, and startup injection flow.
 
 ## 0.2.0.3 - 2026-03-30
 

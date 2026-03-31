@@ -2,7 +2,7 @@
     "owner":  "BLCKSNAKE",
     "versions":  [
                      {
-                         "changelog":  "Fixed Plugin Settings UI styling - now fully visible with proper dark theme contrast. Improved readability and visual hierarchy of path configuration controls.",
+                         "changelog":  "Main Testing Release for v0.2.0.4. Verified repository-based install and update flow, Linux/Docker banner injection compatibility, improved settings UI readability, and non-standard path configuration support.",
                          "version":  "0.2.0.4",
                          "checksum":  "4573ea7c9c9c719f42b71f4951e9e884",
                          "timestamp":  "2026-03-30T23:46:05Z",

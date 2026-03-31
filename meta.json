@@ -1,13 +1,13 @@
 {
   "category": "Notifications",
-  "changelog": "Fixed Plugin Settings UI styling - now fully visible with proper dark theme contrast. Improved readability and visual hierarchy of path configuration controls.",
-  "description": "Server-wide announcements and maintenance banners with intuitive path configuration for non-standard installations.",
+  "changelog": "Main Testing Release for v0.2.0.4. Verified repository updates, Linux/Docker deployment, admin announcement UI, login-page support, and writable web-path banner injection for non-standard Jellyfin installs.",
+  "description": "Server-wide announcements and maintenance banners with validated repository updates and configurable path support for non-standard installations.",
   "guid": "b0f1f4f0-3f5a-4a9b-9a0b-a11c0ce00001",
   "imageUrl": "",
   "name": "Announcements",
   "overview": "Display admin announcements to all users in the web UI.",
   "owner": "BLCKSNAKE",
   "targetAbi": "10.11.0.0",
-  "timestamp": "2026-03-30T23:45:00Z",
+  "timestamp": "2026-03-31T00:10:00Z",
   "version": "0.2.0.4"
 }

@@ -33,7 +33,7 @@ Required plugin files:
 ## 4) GitHub Release
 
 - Push tags and source
-- Create a GitHub Release with the version tag (example: v0.2.0.0)
+- Create a GitHub Release with the version tag (example: v0.2.0.4)
 - Attach release/Announcements_<version>.zip
 - Include changelog highlights
 

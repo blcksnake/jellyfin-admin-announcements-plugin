@@ -13,5 +13,5 @@ services:
       - ./docker/jellyfin-test/config:/config
       - ./docker/jellyfin-test/cache:/cache
       - ./docker/jellyfin-test/media:/media
-      - ./release/Announcements_0.2.0.0:/config/plugins/Announcements_0.2.0.0
+      - ./release/Announcements_0.2.0.4:/config/plugins/Announcements_0.2.0.4
     restart: unless-stopped

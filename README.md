@@ -5,6 +5,7 @@ Server-wide announcements and maintenance banners for Jellyfin.
 ## Status
 
 - Version: 0.2.0.4
+- Release: Main Testing Release (v0.2.0.4)
 - Target Jellyfin ABI: 10.11.0.0
 - Framework: .NET 9
 
