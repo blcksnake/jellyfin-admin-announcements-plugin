@@ -44,15 +44,10 @@ No manual file copy and no local build is required for end users.
 
 ## Prerequisites
 
-No hard prerequisite plugin is required.
+No additional plugin is required.
 
-For the most reliable cross-platform script injection (especially Linux containers), JavaScript Injector is recommended.
-Some JavaScript Injector builds may also require File Transformation.
-
-The Announcements plugin tries both methods at startup:
-
-- JS Injector registration (preferred)
-- Direct jellyfin-web index patching (fallback when web files are writable)
+The Announcements plugin injects its banner script by patching `jellyfin-web/index.html` at startup.
+For Linux and container deployments, this requires write permission to the web path.
 
 ## Maintainers
 
@@ -66,10 +61,53 @@ For release packaging and repository publishing workflow, see DISTRIBUTION.md.
 	- `JELLYFIN_WEB_INDEX_PATH` (full path to `index.html`)
 	- `JELLYFIN_WEB_DIR` (directory containing `index.html`)
 - If announcements do not appear:
-	1. Confirm JavaScript Injector is installed and active.
+	1. Confirm index patching can write to the web path.
 	2. Restart Jellyfin and hard refresh browser.
 	3. Check logs for injection status lines from `[Announcements]`.
-	4. If using index patch fallback, ensure the target index path is writable.
+	4. Ensure the target index path is writable by the Jellyfin runtime user.
+
+## Troubleshooting: Banner Not Displaying (Linux/Docker)
+
+If logs show permission errors such as `UnauthorizedAccessException` for `/usr/share/jellyfin/web/index.html.bak`, the plugin cannot patch `index.html`.
+
+Check logs:
+
+```bash
+docker logs --tail 400 jellyfin 2>&1 | egrep -i "Announcements|inject|index.html|denied|unauthorized|plugin"
+```
+
+Quick fix (works immediately):
+
+```bash
+docker exec -it jellyfin sh -c '
+chmod 777 /usr/share/jellyfin/web
+chmod 666 /usr/share/jellyfin/web/index.html
+'
+docker restart jellyfin
+```
+
+Safer fix (recommended over 777/666):
+
+```bash
+docker exec -it jellyfin sh -c '
+chgrp 1000 /usr/share/jellyfin/web /usr/share/jellyfin/web/index.html
+chmod 775 /usr/share/jellyfin/web
+chmod 664 /usr/share/jellyfin/web/index.html
+'
+docker restart jellyfin
+```
+
+Verify success:
+
+```bash
+docker logs --tail 250 jellyfin 2>&1 | egrep -i "Announcements|patched|index.html|denied"
+```
+
+Expected line:
+
+`[Announcements] Patched /usr/share/jellyfin/web/index.html - banners will auto-load on every page.`
+
+Note: some container/image updates may reset permissions. Reapply the fix if needed.
 
 ## Contributing
 
