@@ -2,6 +2,15 @@
 
  All notable changes to this project will be documented in this file.
 
+## 0.2.0.5 - 2026-04-06
+
+- Added announcement analytics for views, dismisses, and live active impressions.
+- Added admin quick actions to duplicate, archive/unarchive, and enable/disable announcements.
+- Added tag support for announcements, including cleaned-up tag entry and list filtering.
+- Added an operational diagnostics panel showing injection mode, resolved path, startup time, and plugin version.
+- Added branded logo metadata for Jellyfin catalog display and a repository banner for GitHub.
+- Refined the admin list to surface lifecycle state, analytics counters, and cleaner announcement management.
+
 ## 0.2.0.4 - 2026-03-30
 
 - **MAIN TESTING RELEASE**: v0.2.0.4 is the primary public testing build for the plugin.

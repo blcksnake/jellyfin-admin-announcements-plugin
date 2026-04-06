@@ -1,23 +1,34 @@
 # Jellyfin Announcements Plugin
 
+![Jellyfin Announcements banner](docs/images/jellyfin-admin-announcements-plugin-banner-logo.png)
+
 Server-wide announcements and maintenance banners for Jellyfin.
 
 ## Status
 
-- Version: 0.2.0.4
-- Release: Main Testing Release (v0.2.0.4)
+- Version: 0.2.0.5
 - Target Jellyfin ABI: 10.11.0.0
 - Framework: .NET 9
 
 ## Features
 
 - Admin CRUD for announcements
+- Basic announcement analytics: views, dismisses, active impressions
+- Tag-based organization and filtering
+- Duplicate, archive/unarchive, and enable/disable admin actions
+- Operational diagnostics for injection mode and resolved path
 - Severity-based messaging: Info, Warning, Critical
 - Optional start/end scheduling
 - Login-page visibility toggle per announcement
 - Optional dismiss controls
 - Dismiss behavior: session or permanent
 - Auto-load banner script support through index patching
+
+## Branding
+
+![Jellyfin Announcements logo](docs/images/jellyfin-admin-announcements-plugin-logo.png)
+
+The plugin catalog metadata now points at the hosted project logo so the Jellyfin manifest can display branded artwork after release.
 
 ## Screenshot
 
@@ -47,8 +58,8 @@ No manual file copy and no local build is required for end users.
 
 No additional plugin is required.
 
-The Announcements plugin injects its banner script by patching `jellyfin-web/index.html` at startup.
-For Linux and container deployments, this requires write permission to the web path.
+The Announcements plugin injects its banner script through JavaScript Injector when that plugin is available, and otherwise falls back to patching `jellyfin-web/index.html` at startup.
+For Linux and container deployments, index patch fallback requires write permission to the web path.
 
 ## Maintainers
 
@@ -56,8 +67,9 @@ For release packaging and repository publishing workflow, see DISTRIBUTION.md.
 
 ## Compatibility Notes
 
-- Plugin is tested with Jellyfin 10.11.6.
+- Plugin is tested with Jellyfin 10.11.8.
 - Auto web injection now supports Windows, Linux, macOS, and common container layouts.
+- Diagnostics in the admin page show whether the plugin is running through JS Injector or direct index patching.
 - Optional overrides for non-standard installs:
 	- `JELLYFIN_WEB_INDEX_PATH` (full path to `index.html`)
 	- `JELLYFIN_WEB_DIR` (directory containing `index.html`)

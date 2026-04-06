@@ -1,12 +1,12 @@
 {
   "Id": "b0f1f4f0-3f5a-4a9b-9a0b-a11c0ce00001",
   "Name": "Announcements",
-  "Description": "Server-wide announcements and maintenance banners",
-  "Version": "0.2.0.4",
+  "Description": "Server-wide announcements, analytics, tags, and operational diagnostics for Jellyfin",
+  "Version": "0.2.0.5",
   "TargetAbi": "10.11.0.0",
   "Owner": "BLCKSNAKE",
   "Category": "Notifications",
-  "ImageUrl": "",
-  "Overview": "Display admin announcements to all users in the web UI.",
+  "ImageUrl": "https://raw.githubusercontent.com/BLCKSNAKE/jellyfin-admin-announcements-plugin/main/docs/images/jellyfin-admin-announcements-plugin-logo.png",
+  "Overview": "Display admin announcements with analytics, tags, and diagnostics in the Jellyfin web UI.",
   "AutoUpdate": true
 }

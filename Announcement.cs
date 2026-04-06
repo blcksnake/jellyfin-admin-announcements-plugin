@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
 namespace Jellyfin.Plugin.Announcements;
@@ -38,6 +39,30 @@ public class Announcement
     [JsonPropertyName("dismissMode")]
     public string DismissMode { get; set; } = "permanent";
 
+    /// <summary>Categorization tags for filtering and grouping.</summary>
+    [JsonPropertyName("tags")]
+    public List<string> Tags { get; set; } = new();
+
+    /// <summary>When true, the announcement is hidden from all views and API responses.</summary>
+    [JsonPropertyName("isArchived")]
+    public bool IsArchived { get; set; }
+
+    /// <summary>When false, the announcement is paused and will not appear regardless of schedule.</summary>
+    [JsonPropertyName("isEnabled")]
+    public bool IsEnabled { get; set; } = true;
+
+    /// <summary>Total number of times this announcement has been rendered to users.</summary>
+    [JsonPropertyName("viewCount")]
+    public int ViewCount { get; set; }
+
+    /// <summary>Total number of times this announcement has been dismissed by users.</summary>
+    [JsonPropertyName("dismissCount")]
+    public int DismissCount { get; set; }
+
+    /// <summary>Current number of active browser sessions displaying this announcement.</summary>
+    [JsonPropertyName("activeImpressions")]
+    public int ActiveImpressions { get; set; }
+
     public bool IsActive(DateTimeOffset now) =>
-        now >= StartsAt && (EndsAt is null || now <= EndsAt);
+        !IsArchived && IsEnabled && now >= StartsAt && (EndsAt is null || now <= EndsAt);
 }

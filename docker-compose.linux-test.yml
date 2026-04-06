@@ -2,7 +2,7 @@ name: jellyfin-linux-test
 
 services:
   jellyfin:
-    image: jellyfin/jellyfin:10.11.6
+    image: jellyfin/jellyfin
     container_name: jellyfin-linux-test
     user: "0:0" # test-only: allows plugin to patch web index automatically
     environment:

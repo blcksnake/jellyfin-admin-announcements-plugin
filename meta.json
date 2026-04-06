@@ -1,13 +1,13 @@
 {
   "category": "Notifications",
-  "changelog": "Main Testing Release for v0.2.0.4. Verified repository updates, Linux/Docker deployment, admin announcement UI, login-page support, and writable web-path banner injection for non-standard Jellyfin installs.",
-  "description": "Server-wide announcements and maintenance banners with validated repository updates and configurable path support for non-standard installations.",
+  "changelog": "Quality + visibility update for v0.2.0.5. Adds announcement analytics, tags, duplicate/archive/enable actions, operational diagnostics, and branded catalog artwork.",
+  "description": "Server-wide announcements and maintenance banners with analytics, tags, admin quality-of-life actions, and diagnostics for non-standard installations.",
   "guid": "b0f1f4f0-3f5a-4a9b-9a0b-a11c0ce00001",
-  "imageUrl": "",
+  "imageUrl": "https://raw.githubusercontent.com/BLCKSNAKE/jellyfin-admin-announcements-plugin/main/docs/images/jellyfin-admin-announcements-plugin-logo.png",
   "name": "Announcements",
-  "overview": "Display admin announcements to all users in the web UI.",
+  "overview": "Display admin announcements with analytics, tags, and diagnostics in the Jellyfin web UI.",
   "owner": "BLCKSNAKE",
   "targetAbi": "10.11.0.0",
-  "timestamp": "2026-03-31T00:10:00Z",
-  "version": "0.2.0.4"
+  "timestamp": "2026-04-06T00:00:00Z",
+  "version": "0.2.0.5"
 }

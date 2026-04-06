@@ -9,7 +9,23 @@
     const API_PATH = API_BASE;
     const STORAGE_KEY_PERM = 'announcements.dismissed.permanent';
     const STORAGE_KEY_SESSION = 'announcements.dismissed.session';
+    const SESSION_KEY = 'announcements.runtime.sessionId';
     const POLL_INTERVAL = 5000; // 5 seconds
+    const activeImpressionIds = new Set();
+
+    function getSessionId() {
+        try {
+            const existing = sessionStorage.getItem(SESSION_KEY);
+            if (existing) return existing;
+            const created = 'sess-' + Date.now() + '-' + Math.random().toString(36).slice(2, 10);
+            sessionStorage.setItem(SESSION_KEY, created);
+            return created;
+        } catch {
+            return 'sess-fallback';
+        }
+    }
+
+    const sessionId = getSessionId();
 
     function ensureCssLoaded() {
         if (document.getElementById('jf-announcements-css')) return;
@@ -91,6 +107,20 @@
         }
     }
 
+    async function postEvent(path, body) {
+        try {
+            await fetch(API_BASE + path, {
+                method: 'POST',
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json' },
+                body: body ? JSON.stringify(body) : undefined,
+                keepalive: true
+            });
+        } catch {
+            // Ignore analytics transport failures.
+        }
+    }
+
     function isLoginPage() {
         const hash = (window.location.hash || '').toLowerCase();
         return hash.indexOf('#/login') >= 0;
@@ -143,7 +173,9 @@
         close.addEventListener('click', () => {
             if (a.id !== 'preview' && a.allowDismiss !== false) {
                 markDismissed(a);
+                postEvent('/' + encodeURIComponent(a.id) + '/Dismiss');
             }
+            stopImpression(a.id);
             card.remove();
         });
 
@@ -177,6 +209,23 @@
         }
         
         container.insertBefore(card, container.firstChild);
+
+        if (a.id && a.id !== 'preview') {
+            postEvent('/' + encodeURIComponent(a.id) + '/View');
+            startImpression(a.id);
+        }
+    }
+
+    function startImpression(id) {
+        if (!id || activeImpressionIds.has(id)) return;
+        activeImpressionIds.add(id);
+        postEvent('/' + encodeURIComponent(id) + '/Impression/Start', { sessionId });
+    }
+
+    function stopImpression(id) {
+        if (!id || !activeImpressionIds.has(id)) return;
+        activeImpressionIds.delete(id);
+        postEvent('/' + encodeURIComponent(id) + '/Impression/End', { sessionId });
     }
 
     function getDisplayedIds() {
@@ -227,7 +276,11 @@
 
         // Remove banners that are no longer active
         document.querySelectorAll('.jf-announcement[data-id]').forEach(el => {
-            if (!visibleIds.includes(el.getAttribute('data-id'))) el.remove();
+            const id = el.getAttribute('data-id');
+            if (!visibleIds.includes(id)) {
+                stopImpression(id);
+                el.remove();
+            }
         });
 
         const displayed = getDisplayedIds();
@@ -240,6 +293,10 @@
         await pollAnnouncements();
         setInterval(pollAnnouncements, POLL_INTERVAL);
     }
+
+    window.addEventListener('beforeunload', () => {
+        Array.from(activeImpressionIds).forEach(id => stopImpression(id));
+    });
 
     // Expose showAnnouncement globally for preview
     window.showAnnouncement = showAnnouncement;

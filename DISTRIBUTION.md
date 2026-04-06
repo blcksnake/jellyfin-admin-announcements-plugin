@@ -33,7 +33,7 @@ Required plugin files:
 ## 4) GitHub Release
 
 - Push tags and source
-- Create a GitHub Release with the version tag (example: v0.2.0.4)
+- Create a GitHub Release with the version tag (example: v0.2.0.5)
 - Attach release/Announcements_<version>.zip
 - Include changelog highlights
 
@@ -53,6 +53,8 @@ To generate a repository manifest compatible with Jellyfin Repositories:
 - powershell -ExecutionPolicy Bypass -File ./build-repository-manifest.ps1 -SourceUrl "https://github.com/blcksnake/jellyfin-admin-announcements-plugin/releases/download/v<version>/Announcements_<version>.zip" -Version "<version>" -ZipPath "./release/Announcements_<version>.zip" -OutputPath "./repository/manifest.json"
 
 Then host `repository/manifest.json` at a stable public URL and share that URL.
+
+Do not publish an updated `repository/manifest.json` until the final zip asset exists and the checksum has been regenerated for that exact artifact.
 
 Recommended repository URL to add in Jellyfin:
 

@@ -28,6 +28,11 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
     private int _retryCount;
     private const int MaxRetries = 3;
 
+    // Diagnostics
+    private string _injectionMode = "None";
+    private string? _resolvedIndexPath;
+    private readonly DateTimeOffset _startupTime = DateTimeOffset.UtcNow;
+
     private sealed class RuntimeSettings
     {
         public bool ShowOnLoginPage { get; set; }
@@ -41,13 +46,24 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
         Store = new AnnouncementStore(applicationPaths);
         _runtimeSettingsPath = Path.Combine(applicationPaths.DataPath, "announcements.settings.json");
         _runtimeSettings = LoadRuntimeSettings();
-        var indexPatched = PatchJellyfinWebIndex();
         var jsInjectorRegistered = RegisterWithJsInjector();
-
-        if (!indexPatched && !jsInjectorRegistered)
+        if (jsInjectorRegistered)
         {
-            _logger.LogError(
-                "[Announcements] Banner script was not injected. Install/enable JavaScript Injector, or set JELLYFIN_WEB_INDEX_PATH/JELLYFIN_WEB_DIR to a writable jellyfin-web index path.");
+            _injectionMode = "JsInjector";
+        }
+        else
+        {
+            var indexPatched = PatchJellyfinWebIndex();
+            if (indexPatched)
+            {
+                _injectionMode = "IndexPatch";
+            }
+            else
+            {
+                _injectionMode = "None";
+                _logger.LogError(
+                    "[Announcements] Banner script was not injected. Install/enable JavaScript Injector, or set JELLYFIN_WEB_INDEX_PATH/JELLYFIN_WEB_DIR to a writable jellyfin-web index path.");
+            }
         }
     }
 
@@ -58,6 +74,18 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
 
     /// <summary>Gets a value indicating whether announcements are shown on the login page.</summary>
     public bool ShowOnLoginPage => _runtimeSettings.ShowOnLoginPage;
+
+    /// <summary>Returns operational diagnostic information about how the banner script was injected.</summary>
+    public Api.AnnouncementController.DiagnosticsDto GetDiagnostics()
+    {
+        return new Api.AnnouncementController.DiagnosticsDto
+        {
+            InjectionMode = _injectionMode ?? "None",
+            ResolvedIndexPath = _resolvedIndexPath,
+            StartupTime = _startupTime,
+            PluginVersion = Version?.ToString() ?? "0.2.0.5"
+        };
+    }
 
     /// <summary>Updates whether announcements should appear on the login page.</summary>
     public void SetShowOnLoginPage(bool enabled)
@@ -120,7 +148,7 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
 
     public override Guid Id => Guid.Parse("b0f1f4f0-3f5a-4a9b-9a0b-a11c0ce00001");
 
-    public override string Description => "Server-wide announcements and maintenance banners for Jellyfin.";
+    public override string Description => "Server-wide announcements, analytics, tags, and diagnostics for Jellyfin.";
 
     private RuntimeSettings LoadRuntimeSettings()
     {
@@ -208,6 +236,7 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
                 var content = File.ReadAllText(full, System.Text.Encoding.UTF8);
                 if (content.Contains(Marker))
                 {
+                    _resolvedIndexPath = full;
                     _logger.LogInformation("[Announcements] index.html already patched at {Path}", full);
                     return true;
                 }
@@ -218,6 +247,7 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
 
                 content = content.Replace("</body>", ScriptTag + "\n</body>", StringComparison.OrdinalIgnoreCase);
                 File.WriteAllText(full, content, System.Text.Encoding.UTF8);
+                _resolvedIndexPath = full;
                 _logger.LogInformation("[Announcements] Patched {Path} — banners will auto-load on every page.", full);
                 return true;
             }

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Net.Mime;
 using System.Reflection;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -29,6 +30,31 @@ public class AnnouncementController : ControllerBase
         public string? CustomWebPath { get; set; }
         public string? CustomIndexPath { get; set; }
         public bool EnablePathLogging { get; set; }
+    }
+
+    public class DiagnosticsDto
+    {
+        [JsonPropertyName("injectionMode")]
+        public string InjectionMode { get; set; } = "None";
+
+        [JsonPropertyName("resolvedIndexPath")]
+        public string? ResolvedIndexPath { get; set; }
+
+        [JsonPropertyName("startupTime")]
+        public DateTimeOffset StartupTime { get; set; }
+
+        [JsonPropertyName("pluginVersion")]
+        public string PluginVersion { get; set; } = string.Empty;
+    }
+
+    public class ImpressionDto
+    {
+        public string SessionId { get; set; } = string.Empty;
+    }
+
+    public class ToggleDto
+    {
+        public bool Value { get; set; }
     }
 
     private static readonly HashSet<string> ValidLevels = new(System.StringComparer.OrdinalIgnoreCase)
@@ -84,6 +110,9 @@ public class AnnouncementController : ControllerBase
         await Task.CompletedTask;
         if (announcement is null)
             return BadRequest("Request body is required.");
+
+        announcement.Title = announcement.Title?.Trim() ?? string.Empty;
+        announcement.Message = announcement.Message?.Trim() ?? string.Empty;
 
         if (string.IsNullOrWhiteSpace(announcement.Title))
             return BadRequest("Title is required.");
@@ -224,5 +253,112 @@ public class AnnouncementController : ControllerBase
             CustomIndexPath = Plugin.Instance.GetCustomIndexPath(),
             EnablePathLogging = Plugin.Instance.GetEnablePathLogging()
         });
+    }
+
+    /// <summary>Returns operational diagnostics: injection mode, resolved path, startup time.</summary>
+    [HttpGet("Admin/Diagnostics")]
+    [Authorize(Policy = "RequiresElevation")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public ActionResult<DiagnosticsDto> GetDiagnostics()
+    {
+        if (Plugin.Instance is null)
+        {
+            return BadRequest("Plugin is not loaded.");
+        }
+
+        return Ok(Plugin.Instance.GetDiagnostics());
+    }
+
+    // ── Analytics endpoints (anonymous — fire-and-forget from banner.js) ──────────
+
+    /// <summary>Records that a user viewed an announcement. Idempotent; ignores unknown IDs.</summary>
+    [HttpPost("{id}/View")]
+    [AllowAnonymous]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    public IActionResult RecordView(string id)
+    {
+        if (!string.IsNullOrWhiteSpace(id))
+            _store.RecordView(id);
+        return NoContent();
+    }
+
+    /// <summary>Records that a user dismissed an announcement. Idempotent; ignores unknown IDs.</summary>
+    [HttpPost("{id}/Dismiss")]
+    [AllowAnonymous]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    public IActionResult RecordDismiss(string id)
+    {
+        if (!string.IsNullOrWhiteSpace(id))
+            _store.RecordDismiss(id);
+        return NoContent();
+    }
+
+    /// <summary>Marks an announcement as currently visible in a browser session.</summary>
+    [HttpPost("{id}/Impression/Start")]
+    [AllowAnonymous]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    public IActionResult StartImpression(string id, [FromBody] ImpressionDto? dto)
+    {
+        if (!string.IsNullOrWhiteSpace(id) && !string.IsNullOrWhiteSpace(dto?.SessionId))
+        {
+            _store.StartImpression(id, dto.SessionId);
+        }
+
+        return NoContent();
+    }
+
+    /// <summary>Marks an announcement as no longer visible in a browser session.</summary>
+    [HttpPost("{id}/Impression/End")]
+    [AllowAnonymous]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    public IActionResult EndImpression(string id, [FromBody] ImpressionDto? dto)
+    {
+        if (!string.IsNullOrWhiteSpace(id) && !string.IsNullOrWhiteSpace(dto?.SessionId))
+        {
+            _store.EndImpression(id, dto.SessionId);
+        }
+
+        return NoContent();
+    }
+
+    // ── Admin QoL endpoints ────────────────────────────────────────────────────────
+
+    /// <summary>Duplicates an existing announcement with a new ID, retaining all fields. The copy starts disabled.</summary>
+    [HttpPost("Admin/{id}/Duplicate")]
+    [Authorize(Policy = "RequiresElevation")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public ActionResult<Announcement> Duplicate(string id)
+    {
+        var copy = _store.Duplicate(id);
+        if (copy is null)
+            return NotFound();
+        return Ok(copy);
+    }
+
+    /// <summary>Archives or unarchives an announcement.</summary>
+    [HttpPost("Admin/{id}/Archive")]
+    [Authorize(Policy = "RequiresElevation")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public IActionResult SetArchived(string id, [FromBody] ToggleDto? dto)
+    {
+        var archived = dto?.Value ?? true;
+        if (!_store.SetArchived(id, archived))
+            return NotFound();
+        return NoContent();
+    }
+
+    /// <summary>Enables or disables (pauses) an announcement.</summary>
+    [HttpPost("Admin/{id}/Enable")]
+    [Authorize(Policy = "RequiresElevation")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public IActionResult SetEnabled(string id, [FromBody] ToggleDto? dto)
+    {
+        var enabled = dto?.Value ?? true;
+        if (!_store.SetEnabled(id, enabled))
+            return NotFound();
+        return NoContent();
     }
 }

@@ -16,7 +16,16 @@
                     <h2 class="sectionTitle">Announcements</h2>
                 </div>
 
-                <div class="verticalSection" style="margin-bottom:2em;padding:16px;background:#1a1a1a;border-radius:4px;border-left:4px solid #0066cc;">
+                <div style="display:flex;gap:10px;margin:12px 0 18px 0;flex-wrap:wrap;">
+                    <button id="TabAnnouncements" is="emby-button" type="button" class="raised emby-button" style="background:#0066cc;color:#fff;min-width:150px;">
+                        <span>Announcements</span>
+                    </button>
+                    <button id="TabSettings" is="emby-button" type="button" class="emby-button" style="background:#2f3b45;color:#fff;min-width:150px;">
+                        <span>Settings</span>
+                    </button>
+                </div>
+
+                <div id="PluginSettingsSection" class="verticalSection" style="display:none;margin-bottom:2em;padding:16px;background:#1a1a1a;border-radius:4px;border-left:4px solid #0066cc;">
                     <h3 style="color:#ffffff;margin-top:0;margin-bottom:16px;font-size:18px;font-weight:600;">⚙️ Plugin Settings</h3>
                     <div class="inputContainer">
                         <label class="inputLabel" style="color:#e0e0e0;display:block;margin-bottom:8px;font-weight:500;" for="CustomWebPath">Custom Web Directory (optional)</label>
@@ -40,6 +49,8 @@
                     </button>
                     <span id="SettingsMessage" style="margin-left:12px;display:none;font-weight:600;font-size:14px;"></span>
                 </div>
+
+                <div id="AnnouncementEditorSection">
 
                 <div class="inputContainer">
                     <label class="inputLabel inputLabelUnfocused" for="Title">Title</label>
@@ -94,26 +105,36 @@
                     <div class="secondaryText" style="margin-top:6px;">For a permanent message, uncheck "Allow users to dismiss this announcement".</div>
                 </div>
 
+                <div class="inputContainer" style="margin-bottom:12px;">
+                    <label class="inputLabel inputLabelUnfocused" for="TagsInput">Tags (optional)</label>
+                    <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;min-height:34px;padding:6px 8px;background:#1a1a1a;border:1px solid #444;border-radius:3px;" id="TagsContainer">
+                        <input id="TagsInput" type="text" placeholder="Add tag, press Enter" style="flex:1;min-width:120px;border:none;background:transparent;color:#fff;outline:none;font-size:14px;" />
+                    </div>
+                    <input type="hidden" id="TagsHidden" />
+                    <div class="secondaryText" style="margin-top:6px;">Press Enter or comma to add a tag. Tags help filter announcements in the list.</div>
+                </div>
+
                 <div style="display:flex;gap:10px;align-items:center;">
                     <button id="SaveBtn" is="emby-button" type="submit" class="raised button-submit block emby-button">
                         <span>Save Announcement</span>
                     </button>
-                    <button id="CancelEditBtn" is="emby-button" type="button" class="emby-button" style="display:none;">
+                    <button id="CancelEditBtn" is="emby-button" type="button" class="emby-button" style="display:none;background:#455a64;color:#ffffff;border:1px solid #607d8b;">
                         <span>Cancel Edit</span>
                     </button>
                     <span id="FormModeLabel" class="secondaryText" style="display:none;">Editing announcement</span>
                 </div>
+                </div>
             </form>
 
-            <div class="verticalSection" style="margin-top:1.5em">
+            <div id="AnnouncementListSection" class="verticalSection" style="margin-top:1.5em">
                 <h3>Current Announcements</h3>
                 <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:8px;">
-                    <div class="inputContainer" style="margin:0;min-width:240px;flex:1;">
+                    <div class="inputContainer" style="margin:0;min-width:200px;flex:1;">
                         <label class="inputLabel inputLabelUnfocused" for="SearchText">Search</label>
                         <input id="SearchText" type="text" is="emby-input" placeholder="Title or message" />
                     </div>
-                    <div class="selectContainer" style="margin:0;min-width:180px;">
-                        <label class="selectLabel" for="StatusFilter">Status filter</label>
+                    <div class="selectContainer" style="margin:0;min-width:150px;">
+                        <label class="selectLabel" for="StatusFilter">Status</label>
                         <select id="StatusFilter" is="emby-select" class="emby-select-withcolor emby-select">
                             <option value="all" selected>All</option>
                             <option value="active">Active</option>
@@ -121,8 +142,30 @@
                             <option value="expired">Expired</option>
                         </select>
                     </div>
+                    <div class="selectContainer" style="margin:0;min-width:150px;">
+                        <label class="selectLabel" for="TagFilter">Tag filter</label>
+                        <select id="TagFilter" is="emby-select" class="emby-select-withcolor emby-select">
+                            <option value="">All tags</option>
+                        </select>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:6px;padding-bottom:4px;">
+                        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;color:#e0e0e0;font-size:13px;">
+                            <input id="ShowArchivedChk" type="checkbox" style="width:16px;height:16px;" />
+                            Show archived
+                        </label>
+                    </div>
                 </div>
                 <div id="AnnouncementsList"></div>
+            </div>
+
+            <div id="DiagnosticsSection" class="verticalSection" style="display:none;margin-top:1.5em;padding:16px;background:#1a1a1a;border-radius:4px;border-left:4px solid #546e7a;">
+                <h3 style="color:#ffffff;margin-top:0;margin-bottom:16px;font-size:16px;font-weight:600;">🔍 Operational Diagnostics</h3>
+                <div id="DiagnosticsPanel">
+                    <div class="secondaryText" style="color:#aaa;">Loading diagnostics…</div>
+                </div>
+                <button id="RefreshDiagnosticsBtn" is="emby-button" type="button" class="emby-button" style="margin-top:10px;padding:6px 16px;font-size:13px;background:#455a64;color:#ffffff;border:1px solid #607d8b;">
+                    <span>Refresh</span>
+                </button>
             </div>
         </div>
     </div>
@@ -133,6 +176,14 @@
             var page = document.querySelector('#AnnouncementsConfigPage');
             var form = document.querySelector('#AnnouncementsForm');
             var listEl = document.querySelector('#AnnouncementsList');
+            var diagnosticsPanelEl = document.querySelector('#DiagnosticsPanel');
+            var refreshDiagnosticsBtn = document.querySelector('#RefreshDiagnosticsBtn');
+            var tabAnnouncementsBtn = document.querySelector('#TabAnnouncements');
+            var tabSettingsBtn = document.querySelector('#TabSettings');
+            var pluginSettingsSection = document.querySelector('#PluginSettingsSection');
+            var announcementEditorSection = document.querySelector('#AnnouncementEditorSection');
+            var announcementListSection = document.querySelector('#AnnouncementListSection');
+            var diagnosticsSection = document.querySelector('#DiagnosticsSection');
 
             var titleEl = document.querySelector('#Title');
             var messageEl = document.querySelector('#Message');
@@ -142,11 +193,16 @@
             var showOnLoginEl = document.querySelector('#AnnouncementShowOnLoginPage');
             var allowDismissEl = document.querySelector('#AllowDismiss');
             var dismissModeEl = document.querySelector('#DismissMode');
+            var tagsInputEl = document.querySelector('#TagsInput');
+            var tagsHiddenEl = document.querySelector('#TagsHidden');
+            var tagsContainerEl = document.querySelector('#TagsContainer');
             var cancelEditBtn = document.querySelector('#CancelEditBtn');
             var formModeLabel = document.querySelector('#FormModeLabel');
             var saveBtnText = document.querySelector('#SaveBtn span');
             var searchTextEl = document.querySelector('#SearchText');
             var statusFilterEl = document.querySelector('#StatusFilter');
+            var tagFilterEl = document.querySelector('#TagFilter');
+            var showArchivedChk = document.querySelector('#ShowArchivedChk');
 
             var customWebPathEl = document.querySelector('#CustomWebPath');
             var customIndexPathEl = document.querySelector('#CustomIndexPath');
@@ -155,7 +211,12 @@
             var settingsMessageEl = document.querySelector('#SettingsMessage');
 
             var editingId = null;
+            var editingMeta = null;
             var allItems = [];
+            var formTags = [];
+            var activeTab = 'announcements';
+            var settingsLoaded = false;
+            var diagnosticsLoaded = false;
 
             function apiUrl(path) {
                 return ApiClient.getUrl(path);
@@ -171,7 +232,7 @@
 
             function esc(value) {
                 var s = (value || '').toString();
-                return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
             }
 
             function pad2(n) {
@@ -187,46 +248,118 @@
             }
 
             function fromLocalInput(value) {
-                if (!value) return null;
+                if (!value) {
+                    return null;
+                }
                 var d = new Date(value);
                 return isNaN(d.getTime()) ? null : d.toISOString();
             }
 
             function toLocalInput(value) {
-                if (!value) return '';
+                if (!value) {
+                    return '';
+                }
                 var d = new Date(value);
-                if (isNaN(d.getTime())) return '';
+                if (isNaN(d.getTime())) {
+                    return '';
+                }
                 d.setSeconds(0, 0);
                 return toDateTimeLocalValue(d);
             }
 
             function levelTag(level) {
                 var color = level === 'danger' ? '#d32f2f' : (level === 'warning' ? '#f9a825' : '#1976d2');
-                return '<span style="display:inline-block;padding:2px 8px;border-radius:12px;background:' + color + ';color:#fff;font-size:12px">' + esc((level || 'info').toUpperCase()) + '</span>';
+                return '<span style="display:inline-block;padding:2px 8px;border-radius:999px;background:' + color + ';color:#fff;font-size:12px;font-weight:600;">' + esc((level || 'info').toUpperCase()) + '</span>';
             }
 
-            function getStatus(a) {
+            function pill(text, background, color) {
+                return '<span style="display:inline-block;padding:2px 8px;border-radius:999px;background:' + background + ';color:' + color + ';font-size:12px;font-weight:600;">' + esc(text) + '</span>';
+            }
+
+            function tagPills(tags) {
+                if (!tags || !tags.length) {
+                    return '<span class="secondaryText">No tags</span>';
+                }
+
+                return tags.map(function (tag) {
+                    return pill('#' + tag, '#263238', '#d5ecff');
+                }).join(' ');
+            }
+
+            function getScheduleStatus(a) {
                 var now = new Date();
                 var starts = new Date(a.startsAt);
                 var ends = a.endsAt ? new Date(a.endsAt) : null;
-                if (!isNaN(starts.getTime()) && now < starts) return 'scheduled';
-                if (ends && !isNaN(ends.getTime()) && now > ends) return 'expired';
+
+                if (!a.isEnabled) {
+                    return 'paused';
+                }
+                if (a.isArchived) {
+                    return 'archived';
+                }
+                if (!isNaN(starts.getTime()) && now < starts) {
+                    return 'scheduled';
+                }
+                if (ends && !isNaN(ends.getTime()) && now > ends) {
+                    return 'expired';
+                }
+
                 return 'active';
             }
 
             function statusTag(status) {
-                var color = status === 'active' ? '#2e7d32' : (status === 'scheduled' ? '#455a64' : '#6d4c41');
-                return '<span style="display:inline-block;padding:2px 8px;border-radius:12px;background:' + color + ';color:#fff;font-size:12px;text-transform:uppercase;">' + esc(status) + '</span>';
+                var colors = {
+                    active: ['#2e7d32', '#ffffff'],
+                    scheduled: ['#455a64', '#ffffff'],
+                    expired: ['#6d4c41', '#ffffff'],
+                    paused: ['#6a1b9a', '#ffffff'],
+                    archived: ['#424242', '#ffffff']
+                };
+                var palette = colors[status] || ['#455a64', '#ffffff'];
+                return pill(status, palette[0], palette[1]);
+            }
+
+            function formatDate(value, fallback) {
+                if (!value) {
+                    return fallback || 'None';
+                }
+                var d = new Date(value);
+                return isNaN(d.getTime()) ? (fallback || 'Invalid') : d.toLocaleString();
             }
 
             function showStatus(text, isError) {
                 if (isError) {
                     Dashboard.alert({ title: 'Announcements', message: text });
-                } else {
-                    try {
-                        require(['toast'], function (toast) { toast({ text: text }); });
-                    } catch (e) {
-                        console.info('[Announcements]', text);
+                    return;
+                }
+
+                try {
+                    require(['toast'], function (toast) { toast({ text: text }); });
+                } catch (e) {
+                    console.info('[Announcements]', text);
+                }
+            }
+
+            function setActiveTab(tabName) {
+                activeTab = tabName === 'settings' ? 'settings' : 'announcements';
+                var isSettings = activeTab === 'settings';
+
+                pluginSettingsSection.style.display = isSettings ? '' : 'none';
+                diagnosticsSection.style.display = isSettings ? '' : 'none';
+                announcementEditorSection.style.display = isSettings ? 'none' : '';
+                announcementListSection.style.display = isSettings ? 'none' : '';
+
+                tabAnnouncementsBtn.style.background = isSettings ? '#2f3b45' : '#0066cc';
+                tabSettingsBtn.style.background = isSettings ? '#0066cc' : '#2f3b45';
+
+                if (isSettings) {
+                    if (!settingsLoaded) {
+                        loadPathConfig();
+                        settingsLoaded = true;
+                    }
+                    if (!diagnosticsLoaded) {
+                        loadDiagnostics();
+                        diagnosticsLoaded = true;
                     }
                 }
             }
@@ -236,8 +369,55 @@
                 dismissModeEl.style.opacity = allowDismissEl.checked ? '1' : '0.55';
             }
 
+            function normalizeTag(tag) {
+                return (tag || '').trim().replace(/^#+/, '');
+            }
+
+            function renderTagEditor() {
+                Array.prototype.slice.call(tagsContainerEl.querySelectorAll('.jf-tag-chip')).forEach(function (el) {
+                    el.remove();
+                });
+
+                formTags.forEach(function (tag, index) {
+                    var chip = document.createElement('span');
+                    chip.className = 'jf-tag-chip';
+                    chip.style.cssText = 'display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border-radius:999px;background:#263238;color:#d5ecff;font-size:12px;font-weight:600;';
+                    chip.innerHTML = '<span>#' + esc(tag) + '</span><button type="button" data-index="' + index + '" style="border:none;background:transparent;color:#9fd3ff;cursor:pointer;font-size:14px;line-height:1;">&times;</button>';
+                    tagsContainerEl.insertBefore(chip, tagsInputEl);
+                });
+
+                tagsHiddenEl.value = JSON.stringify(formTags);
+
+                Array.prototype.slice.call(tagsContainerEl.querySelectorAll('.jf-tag-chip button')).forEach(function (button) {
+                    button.addEventListener('click', function () {
+                        var index = parseInt(button.getAttribute('data-index'), 10);
+                        if (!isNaN(index)) {
+                            formTags.splice(index, 1);
+                            renderTagEditor();
+                        }
+                    });
+                });
+            }
+
+            function addTag(tag) {
+                var normalized = normalizeTag(tag);
+                if (!normalized) {
+                    return;
+                }
+
+                var exists = formTags.some(function (value) {
+                    return value.toLowerCase() === normalized.toLowerCase();
+                });
+                if (!exists) {
+                    formTags.push(normalized);
+                    formTags.sort(function (a, b) { return a.localeCompare(b); });
+                    renderTagEditor();
+                }
+            }
+
             function resetForm(keepTimes) {
                 editingId = null;
+                editingMeta = null;
                 titleEl.value = '';
                 messageEl.value = '';
                 levelEl.value = 'info';
@@ -250,8 +430,9 @@
                 showOnLoginEl.checked = false;
                 allowDismissEl.checked = true;
                 dismissModeEl.value = 'permanent';
+                formTags = [];
+                renderTagEditor();
                 syncDismissUi();
-
                 cancelEditBtn.style.display = 'none';
                 formModeLabel.style.display = 'none';
                 saveBtnText.textContent = 'Save Announcement';
@@ -259,6 +440,7 @@
 
             function beginEdit(item) {
                 editingId = item.id;
+                editingMeta = item;
                 titleEl.value = item.title || '';
                 messageEl.value = item.message || '';
                 levelEl.value = item.level || 'info';
@@ -267,10 +449,12 @@
                 showOnLoginEl.checked = !!item.showOnLoginPage;
                 allowDismissEl.checked = item.allowDismiss !== false;
                 dismissModeEl.value = item.dismissMode || 'permanent';
+                formTags = (item.tags || []).slice().sort(function (a, b) { return a.localeCompare(b); });
+                renderTagEditor();
                 syncDismissUi();
-
                 cancelEditBtn.style.display = 'inline-flex';
                 formModeLabel.style.display = 'inline';
+                formModeLabel.textContent = 'Editing announcement';
                 saveBtnText.textContent = 'Update Announcement';
                 window.scrollTo({ top: 0, behavior: 'smooth' });
             }
@@ -278,60 +462,136 @@
             function getFilteredItems(items) {
                 var query = (searchTextEl.value || '').trim().toLowerCase();
                 var statusFilter = statusFilterEl.value || 'all';
+                var selectedTag = (tagFilterEl.value || '').toLowerCase();
+                var includeArchived = !!showArchivedChk.checked;
 
-                return items.filter(function (a) {
-                    var status = getStatus(a);
-                    if (statusFilter !== 'all' && status !== statusFilter) return false;
+                return items.filter(function (item) {
+                    var status = getScheduleStatus(item);
+                    var tags = (item.tags || []).map(function (tag) { return String(tag).toLowerCase(); });
+                    var hay = ((item.title || '') + ' ' + (item.message || '') + ' ' + tags.join(' ')).toLowerCase();
 
-                    if (!query) return true;
-                    var hay = ((a.title || '') + ' ' + (a.message || '')).toLowerCase();
-                    return hay.indexOf(query) >= 0;
+                    if (!includeArchived && item.isArchived) {
+                        return false;
+                    }
+                    if (statusFilter !== 'all' && status !== statusFilter) {
+                        return false;
+                    }
+                    if (selectedTag && tags.indexOf(selectedTag) === -1) {
+                        return false;
+                    }
+                    if (query && hay.indexOf(query) === -1) {
+                        return false;
+                    }
+
+                    return true;
                 });
             }
 
+            function updateTagFilterOptions(items) {
+                var currentValue = tagFilterEl.value;
+                var tags = [];
+
+                items.forEach(function (item) {
+                    (item.tags || []).forEach(function (tag) {
+                        if (tags.every(function (existing) { return existing.toLowerCase() !== String(tag).toLowerCase(); })) {
+                            tags.push(String(tag));
+                        }
+                    });
+                });
+
+                tags.sort(function (a, b) { return a.localeCompare(b); });
+                tagFilterEl.innerHTML = '<option value="">All tags</option>' + tags.map(function (tag) {
+                    return '<option value="' + esc(tag) + '">' + esc(tag) + '</option>';
+                }).join('');
+
+                if (currentValue && tags.some(function (tag) { return tag.toLowerCase() === currentValue.toLowerCase(); })) {
+                    tagFilterEl.value = currentValue;
+                }
+            }
+
+            function renderMetrics(item) {
+                return '<div style="display:grid;grid-template-columns:repeat(3,minmax(90px,1fr));gap:8px;margin-top:10px;">' +
+                    '<div style="padding:8px;border-radius:8px;background:#161d24;"><div class="secondaryText">Views</div><div style="font-size:18px;font-weight:700;">' + esc(item.viewCount || 0) + '</div></div>' +
+                    '<div style="padding:8px;border-radius:8px;background:#161d24;"><div class="secondaryText">Dismisses</div><div style="font-size:18px;font-weight:700;">' + esc(item.dismissCount || 0) + '</div></div>' +
+                    '<div style="padding:8px;border-radius:8px;background:#161d24;"><div class="secondaryText">Active impressions</div><div style="font-size:18px;font-weight:700;">' + esc(item.activeImpressions || 0) + '</div></div>' +
+                    '</div>';
+            }
+
             function renderList(items) {
+                updateTagFilterOptions(items);
+
                 var filtered = getFilteredItems(items);
                 if (!filtered.length) {
                     listEl.innerHTML = '<div class="secondaryText">No announcements match the current filter.</div>';
                     return;
                 }
 
-                listEl.innerHTML = filtered.map(function (announcement) {
-                    var starts = new Date(announcement.startsAt).toLocaleString();
-                    var ends = announcement.endsAt ? new Date(announcement.endsAt).toLocaleString() : 'No expiry';
-                    var scope = announcement.showOnLoginPage ? 'Login + app' : 'App only';
-                    var dismissRule = announcement.allowDismiss === false ? 'Not dismissible' : ('Dismiss: ' + (announcement.dismissMode || 'permanent'));
-                    var status = getStatus(announcement);
+                listEl.innerHTML = filtered.map(function (item) {
+                    var starts = formatDate(item.startsAt, 'Not set');
+                    var ends = formatDate(item.endsAt, 'No expiry');
+                    var scope = item.showOnLoginPage ? 'Login + app' : 'App only';
+                    var dismissRule = item.allowDismiss === false ? 'Not dismissible' : ('Dismiss: ' + (item.dismissMode || 'permanent'));
+                    var status = getScheduleStatus(item);
 
-                    return '<div class="card" style="padding:12px;margin:8px 0">' +
-                        '<div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start">' +
-                        '<div>' +
-                        '<div style="display:flex;gap:6px;flex-wrap:wrap">' + levelTag(announcement.level) + statusTag(status) + '</div>' +
-                        '<div style="font-weight:600;margin-top:8px">' + esc(announcement.title) + '</div>' +
-                        '<div class="secondaryText" style="margin-top:4px">' + esc(announcement.message) + '</div>' +
-                        '<div class="secondaryText" style="margin-top:8px">Starts: ' + esc(starts) + ' | Ends: ' + esc(ends) + '</div>' +
-                        '<div class="secondaryText" style="margin-top:4px">Scope: ' + esc(scope) + ' | ' + esc(dismissRule) + '</div>' +
+                    return '<div class="card" style="padding:14px;margin:10px 0;border-left:4px solid ' + (item.level === 'danger' ? '#d32f2f' : item.level === 'warning' ? '#f9a825' : '#1976d2') + ';">' +
+                        '<div style="display:flex;justify-content:space-between;gap:14px;align-items:flex-start;flex-wrap:wrap;">' +
+                        '<div style="flex:1;min-width:280px;">' +
+                        '<div style="display:flex;gap:6px;flex-wrap:wrap;">' + levelTag(item.level) + statusTag(status) + (item.isEnabled ? pill('enabled', '#1b5e20', '#fff') : pill('disabled', '#4a148c', '#fff')) + (item.isArchived ? pill('archived', '#424242', '#fff') : '') + '</div>' +
+                        '<div style="font-weight:700;font-size:17px;margin-top:8px;">' + esc(item.title) + '</div>' +
+                        '<div class="secondaryText" style="margin-top:4px;line-height:1.45;">' + esc(item.message) + '</div>' +
+                        '<div class="secondaryText" style="margin-top:8px;">Starts: ' + esc(starts) + ' | Ends: ' + esc(ends) + '</div>' +
+                        '<div class="secondaryText" style="margin-top:4px;">Scope: ' + esc(scope) + ' | ' + esc(dismissRule) + '</div>' +
+                        '<div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;align-items:center;">' + tagPills(item.tags || []) + '</div>' +
+                        renderMetrics(item) +
                         '</div>' +
-                        '<div style="white-space:nowrap;display:flex;gap:6px;">' +
-                        '<button is="emby-button" class="raised emby-button editBtn" style="background:#546e7a;color:#fff;" data-id="' + esc(announcement.id) + '"><span>Edit</span></button>' +
-                        '<button is="emby-button" class="raised button-submit emby-button deleteBtn" data-id="' + esc(announcement.id) + '"><span>Delete</span></button>' +
-                        '</div></div></div>';
+                        '<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:flex-start;justify-content:flex-end;min-width:220px;">' +
+                        '<button is="emby-button" class="raised emby-button editBtn" style="background:#546e7a;color:#fff;" data-id="' + esc(item.id) + '"><span>Edit</span></button>' +
+                        '<button is="emby-button" class="emby-button duplicateBtn" data-id="' + esc(item.id) + '"><span>Duplicate</span></button>' +
+                        '<button is="emby-button" class="emby-button toggleEnableBtn" data-id="' + esc(item.id) + '" data-value="' + esc(item.isEnabled ? 'false' : 'true') + '"><span>' + esc(item.isEnabled ? 'Disable' : 'Enable') + '</span></button>' +
+                        '<button is="emby-button" class="emby-button toggleArchiveBtn" data-id="' + esc(item.id) + '" data-value="' + esc(item.isArchived ? 'false' : 'true') + '"><span>' + esc(item.isArchived ? 'Unarchive' : 'Archive') + '</span></button>' +
+                        '<button is="emby-button" class="raised button-submit emby-button deleteBtn" data-id="' + esc(item.id) + '"><span>Delete</span></button>' +
+                        '</div>' +
+                        '</div>' +
+                        '</div>';
                 }).join('');
 
-                Array.prototype.forEach.call(listEl.querySelectorAll('.editBtn'), function (btn) {
-                    btn.addEventListener('click', function (ev) {
-                        ev.preventDefault();
-                        var id = btn.getAttribute('data-id');
-                        var item = allItems.find(function (x) { return x.id === id; });
-                        if (item) beginEdit(item);
+                function bindButtons(selector, handler) {
+                    Array.prototype.forEach.call(listEl.querySelectorAll(selector), function (btn) {
+                        btn.addEventListener('click', function (ev) {
+                            ev.preventDefault();
+                            handler(btn);
+                        });
                     });
+                }
+
+                bindButtons('.editBtn', function (btn) {
+                    var id = btn.getAttribute('data-id');
+                    var item = allItems.find(function (entry) { return entry.id === id; });
+                    if (item) {
+                        beginEdit(item);
+                    }
                 });
 
-                Array.prototype.forEach.call(listEl.querySelectorAll('.deleteBtn'), function (btn) {
-                    btn.addEventListener('click', function (ev) {
-                        ev.preventDefault();
-                        deleteAnnouncement(btn.getAttribute('data-id'));
-                    });
+                bindButtons('.deleteBtn', function (btn) {
+                    deleteAnnouncement(btn.getAttribute('data-id'));
+                });
+
+                bindButtons('.duplicateBtn', function (btn) {
+                    duplicateAnnouncement(btn.getAttribute('data-id'));
+                });
+
+                bindButtons('.toggleArchiveBtn', function (btn) {
+                    toggleAnnouncementFlag(btn.getAttribute('data-id'), 'Archive', btn.getAttribute('data-value') === 'true');
+                });
+
+                bindButtons('.toggleEnableBtn', function (btn) {
+                    toggleAnnouncementFlag(btn.getAttribute('data-id'), 'Enable', btn.getAttribute('data-value') === 'true');
+                });
+
+                // Add inline styles to ensure button visibility
+                Array.prototype.forEach.call(listEl.querySelectorAll('.duplicateBtn, .toggleArchiveBtn, .toggleEnableBtn'), function (btn) {
+                    btn.style.background = '#546e7a';
+                    btn.style.color = '#fff';
                 });
             }
 
@@ -342,13 +602,18 @@
                         Dashboard.hideLoadingMsg();
                         if (!response.ok) {
                             showStatus('Failed to load announcements (HTTP ' + response.status + ').', true);
+                            return null;
+                        }
+
+                        return response.json();
+                    })
+                    .then(function (items) {
+                        if (!items) {
                             return;
                         }
 
-                        return response.json().then(function (items) {
-                            allItems = items || [];
-                            renderList(allItems);
-                        });
+                        allItems = items || [];
+                        renderList(allItems);
                     })
                     .catch(function () {
                         Dashboard.hideLoadingMsg();
@@ -392,19 +657,55 @@
                 });
             }
 
-            page.addEventListener('pageshow', function () {
-                resetForm(false);
-                loadAnnouncements();
-                loadPathConfig();
-            });
+            function duplicateAnnouncement(id) {
+                Dashboard.showLoadingMsg();
+                fetch(apiUrl(apiBase + '/Admin/' + encodeURIComponent(id) + '/Duplicate'), {
+                    method: 'POST',
+                    headers: authHeaders()
+                })
+                    .then(function (response) {
+                        Dashboard.hideLoadingMsg();
+                        if (!response.ok) {
+                            showStatus('Duplicate failed (HTTP ' + response.status + ').', true);
+                            return null;
+                        }
+                        return response.json();
+                    })
+                    .then(function (item) {
+                        if (!item) {
+                            return;
+                        }
+                        showStatus('Announcement duplicated as disabled draft.');
+                        loadAnnouncements();
+                        beginEdit(item);
+                    })
+                    .catch(function () {
+                        Dashboard.hideLoadingMsg();
+                        showStatus('Duplicate failed.', true);
+                    });
+            }
 
-            cancelEditBtn.addEventListener('click', function () {
-                resetForm(true);
-            });
-
-            allowDismissEl.addEventListener('change', function () {
-                syncDismissUi();
-            });
+            function toggleAnnouncementFlag(id, action, value) {
+                Dashboard.showLoadingMsg();
+                fetch(apiUrl(apiBase + '/Admin/' + encodeURIComponent(id) + '/' + action), {
+                    method: 'POST',
+                    headers: authHeaders({ 'Content-Type': 'application/json' }),
+                    body: JSON.stringify({ value: !!value })
+                })
+                    .then(function (response) {
+                        Dashboard.hideLoadingMsg();
+                        if (!response.ok) {
+                            showStatus(action + ' failed (HTTP ' + response.status + ').', true);
+                            return;
+                        }
+                        showStatus('Announcement updated.');
+                        loadAnnouncements();
+                    })
+                    .catch(function () {
+                        Dashboard.hideLoadingMsg();
+                        showStatus(action + ' failed.', true);
+                    });
+            }
 
             function showSettingsMessage(text, isError) {
                 settingsMessageEl.textContent = text;
@@ -415,18 +716,62 @@
                 }, 4000);
             }
 
+            function renderDiagnostics(data) {
+                var injectionMode = data && data.injectionMode ? esc(data.injectionMode) : 'Unknown';
+                var resolvedPath = data && data.resolvedIndexPath ? esc(data.resolvedIndexPath) : 'Not applicable';
+                var startupTime = data && data.startupTime ? esc(formatDate(data.startupTime)) : 'Unknown';
+                var version = data && data.pluginVersion ? esc(data.pluginVersion) : 'Unknown';
+
+                diagnosticsPanelEl.innerHTML =
+                    '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;">' +
+                    '<div style="padding:12px;border-radius:8px;background:#10161b;border-left:3px solid #0066cc;"><div class="secondaryText">Injection mode</div><div style="font-weight:700;font-size:16px;color:#e0e0e0;margin-top:4px;">' + injectionMode + '</div></div>' +
+                    '<div style="padding:12px;border-radius:8px;background:#10161b;border-left:3px solid #546e7a;"><div class="secondaryText">Resolved index path</div><div style="font-weight:700;font-size:12px;color:#e0e0e0;margin-top:4px;word-break:break-word;font-family:monospace;">' + resolvedPath + '</div></div>' +
+                    '<div style="padding:12px;border-radius:8px;background:#10161b;border-left:3px solid #0066cc;"><div class="secondaryText">Plugin startup time</div><div style="font-weight:700;font-size:13px;color:#e0e0e0;margin-top:4px;">' + startupTime + '</div></div>' +
+                    '<div style="padding:12px;border-radius:8px;background:#10161b;border-left:3px solid #546e7a;"><div class="secondaryText">Plugin version</div><div style="font-weight:700;font-size:16px;color:#e0e0e0;margin-top:4px;">' + version + '</div></div>' +
+                    '</div>';
+            }
+
+            function loadDiagnostics() {
+                diagnosticsPanelEl.innerHTML = '<div class="secondaryText" style="color:#aaa;">Loading diagnostics…</div>';
+                setTimeout(function () {
+                    fetch(apiUrl(apiBase + '/Admin/Diagnostics'), { headers: authHeaders() })
+                        .then(function (response) {
+                            if (!response.ok) {
+                                diagnosticsPanelEl.innerHTML = '<div class="secondaryText" style="color:#f44336;">Diagnostics error (HTTP ' + response.status + '). Plugin may still be initializing.</div>';
+                                return null;
+                            }
+                            return response.json();
+                        })
+                        .then(function (data) {
+                            if (data) {
+                                renderDiagnostics(data);
+                            } else {
+                                diagnosticsPanelEl.innerHTML = '<div class="secondaryText" style="color:#f9a825;">Diagnostics not yet available. Try refreshing in a moment.</div>';
+                            }
+                        })
+                        .catch(function (err) {
+                            console.warn('[Announcements] Diagnostics load error:', err);
+                            diagnosticsPanelEl.innerHTML = '<div class="secondaryText" style="color:#f44336;">Failed to load diagnostics.</div>';
+                        });
+                }, 1000);
+            }
+
             function loadPathConfig() {
                 fetch(apiUrl(apiBase + '/Admin/PathConfig'), { headers: authHeaders() })
                     .then(function (response) {
                         if (!response.ok) {
                             console.warn('[Announcements] Failed to load path config');
+                            return null;
+                        }
+                        return response.json();
+                    })
+                    .then(function (config) {
+                        if (!config) {
                             return;
                         }
-                        return response.json().then(function (config) {
-                            customWebPathEl.value = config.customWebPath || '';
-                            customIndexPathEl.value = config.customIndexPath || '';
-                            enablePathLoggingEl.checked = !!config.enablePathLogging;
-                        });
+                        customWebPathEl.value = config.customWebPath || '';
+                        customIndexPathEl.value = config.customIndexPath || '';
+                        enablePathLoggingEl.checked = !!config.enablePathLogging;
                     })
                     .catch(function (err) {
                         console.warn('[Announcements] Error loading path config:', err);
@@ -454,8 +799,9 @@
                             });
                         }
 
-                        showSettingsMessage('Settings saved! The server will reload the plugin on next startup.');
+                        showSettingsMessage('Settings saved. Restart Jellyfin to refresh startup diagnostics.');
                         loadPathConfig();
+                        loadDiagnostics();
                     })
                     .catch(function (err) {
                         Dashboard.hideLoadingMsg();
@@ -463,9 +809,56 @@
                     });
             }
 
+            page.addEventListener('pageshow', function () {
+                resetForm(false);
+                loadAnnouncements();
+                setActiveTab('announcements');
+            });
+
+            tabAnnouncementsBtn.addEventListener('click', function (e) {
+                e.preventDefault();
+                setActiveTab('announcements');
+            });
+
+            tabSettingsBtn.addEventListener('click', function (e) {
+                e.preventDefault();
+                setActiveTab('settings');
+            });
+
+            cancelEditBtn.addEventListener('click', function () {
+                resetForm(true);
+            });
+
+            allowDismissEl.addEventListener('change', function () {
+                syncDismissUi();
+            });
+
             saveSettingsBtn.addEventListener('click', function (e) {
                 e.preventDefault();
                 savePathConfig();
+            });
+
+            refreshDiagnosticsBtn.addEventListener('click', function (e) {
+                e.preventDefault();
+                loadDiagnostics();
+            });
+
+            tagsInputEl.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter' || e.key === ',') {
+                    e.preventDefault();
+                    addTag(tagsInputEl.value);
+                    tagsInputEl.value = '';
+                } else if (e.key === 'Backspace' && !tagsInputEl.value && formTags.length) {
+                    formTags.pop();
+                    renderTagEditor();
+                }
+            });
+
+            tagsInputEl.addEventListener('blur', function () {
+                if (tagsInputEl.value.trim()) {
+                    addTag(tagsInputEl.value);
+                    tagsInputEl.value = '';
+                }
             });
 
             searchTextEl.addEventListener('input', function () {
@@ -473,6 +866,14 @@
             });
 
             statusFilterEl.addEventListener('change', function () {
+                renderList(allItems);
+            });
+
+            tagFilterEl.addEventListener('change', function () {
+                renderList(allItems);
+            });
+
+            showArchivedChk.addEventListener('change', function () {
                 renderList(allItems);
             });
 
@@ -487,7 +888,10 @@
                     endsAt: fromLocalInput(endsAtEl.value),
                     showOnLoginPage: !!showOnLoginEl.checked,
                     allowDismiss: !!allowDismissEl.checked,
-                    dismissMode: dismissModeEl.value || 'permanent'
+                    dismissMode: dismissModeEl.value || 'permanent',
+                    tags: formTags.slice(),
+                    isArchived: editingMeta ? !!editingMeta.isArchived : false,
+                    isEnabled: editingMeta ? editingMeta.isEnabled !== false : true
                 };
 
                 if (editingId) {
@@ -513,7 +917,7 @@
                             });
                         }
 
-                        showStatus(editingId ? 'Announcement updated!' : 'Announcement saved!');
+                        showStatus(editingId ? 'Announcement updated.' : 'Announcement saved.');
                         resetForm(true);
                         loadAnnouncements();
                     })

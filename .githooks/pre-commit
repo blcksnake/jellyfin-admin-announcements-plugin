@@ -1,0 +1,18 @@
+#!/bin/sh
+# Block commits with generic or missing identity.
+EMAIL=$(git config --get user.email)
+NAME=$(git config --get user.name)
+
+if [ -z "$NAME" ] || [ -z "$EMAIL" ]; then
+  echo "ERROR: git user.name or user.email is not set."
+  echo "Set them before committing."
+  exit 1
+fi
+
+if [ "$EMAIL" = "noreply@github.com" ]; then
+  echo "ERROR: user.email is set to generic noreply@github.com"
+  echo "Use your GitHub noreply identity instead, e.g. blcksnake@users.noreply.github.com"
+  exit 1
+fi
+
+exit 0
