@@ -3,9 +3,9 @@
     <TargetFramework>net9.0</TargetFramework>
     <Nullable>enable</Nullable>
     <LangVersion>latest</LangVersion>
-    <Version>0.2.0.5</Version>
-    <AssemblyVersion>0.2.0.5</AssemblyVersion>
-    <FileVersion>0.2.0.5</FileVersion>
+    <Version>0.2.0.6</Version>
+    <AssemblyVersion>0.2.0.6</AssemblyVersion>
+    <FileVersion>0.2.0.6</FileVersion>
     <Authors>BLCKSNAKE</Authors>
     <Company>BLCKSNAKE</Company>
     <AssemblyName>Jellyfin.Plugin.Announcements</AssemblyName>
@@ -18,7 +18,8 @@
   <ItemGroup>
     <PackageReference Include="Jellyfin.Controller" Version="10.11.6" />
     <PackageReference Include="Jellyfin.Model" Version="10.11.6" />
-    <PackageReference Include="Microsoft.AspNetCore.Mvc.Abstractions" Version="2.2.0" />
+    <!-- Microsoft.AspNetCore.Mvc.Abstractions is supplied transitively by Jellyfin.Controller;
+         pinning the EOL 2.2.0 version is removed to avoid version conflicts and CVE exposure. -->
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
   </ItemGroup>
 

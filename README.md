@@ -6,7 +6,7 @@ Server-wide announcements and maintenance banners for Jellyfin.
 
 ## Status
 
-- Version: 0.2.0.5
+- Version: 0.2.0.6
 - Target Jellyfin ABI: 10.11.0.0
 - Framework: .NET 9
 
@@ -19,10 +19,14 @@ Server-wide announcements and maintenance banners for Jellyfin.
 - Operational diagnostics for injection mode and resolved path
 - Severity-based messaging: Info, Warning, Critical
 - Optional start/end scheduling
+- Audience targeting for all users, signed-in users, admins, and related segments
+- Device targeting with include/exclude rules for desktop, mobile, tablet, and TV
+- Specific-user targeting with live Jellyfin user pickers in the admin editor
 - Login-page visibility toggle per announcement
 - Optional dismiss controls
 - Dismiss behavior: session or permanent
 - Auto-load banner script support through index patching
+- Runtime banner refresh on login/logout and account switching without requiring a manual browser refresh
 
 ## Branding
 
@@ -70,6 +74,7 @@ For release packaging and repository publishing workflow, see DISTRIBUTION.md.
 - Plugin is tested with Jellyfin 10.11.8.
 - Auto web injection now supports Windows, Linux, macOS, and common container layouts.
 - Diagnostics in the admin page show whether the plugin is running through JS Injector or direct index patching.
+- User-targeted announcements now re-evaluate automatically on login, logout, and same-tab account switching.
 - Optional overrides for non-standard installs:
 	- `JELLYFIN_WEB_INDEX_PATH` (full path to `index.html`)
 	- `JELLYFIN_WEB_DIR` (directory containing `index.html`)
@@ -78,6 +83,13 @@ For release packaging and repository publishing workflow, see DISTRIBUTION.md.
 	2. Restart Jellyfin and hard refresh browser.
 	3. Check logs for injection status lines from `[Announcements]`.
 	4. Ensure the target index path is writable by the Jellyfin runtime user.
+
+## Targeting Notes
+
+- Use the login-page toggle when the same announcement should also appear on the Jellyfin login screen.
+- Use specific-user targeting when a banner must only appear for named users such as a single admin or household member.
+- Explicitly included users override role filters, unless that same user is explicitly excluded.
+- Library targeting is still supported by the underlying model for compatibility, but it is no longer exposed in the simplified admin editor.
 
 ## Troubleshooting: Banner Not Displaying (Linux/Docker)
 

@@ -43,6 +43,44 @@ public class Announcement
     [JsonPropertyName("tags")]
     public List<string> Tags { get; set; } = new();
 
+    /// <summary>
+    /// Audience preset: all, authenticated, unauthenticated, admins, nonadmins, kids, nonkids.
+    /// </summary>
+    [JsonPropertyName("audience")]
+    public string Audience { get; set; } = "all";
+
+    /// <summary>Allowed device categories (desktop, mobile, tablet, tv). Empty means all.</summary>
+    [JsonPropertyName("includeDeviceTypes")]
+    public List<string> IncludeDeviceTypes { get; set; } = new();
+
+    /// <summary>Blocked device categories (desktop, mobile, tablet, tv).</summary>
+    [JsonPropertyName("excludeDeviceTypes")]
+    public List<string> ExcludeDeviceTypes { get; set; } = new();
+
+    /// <summary>Allowed user roles (admin, user, kid). Empty means all roles.</summary>
+    [JsonPropertyName("includeUserRoles")]
+    public List<string> IncludeUserRoles { get; set; } = new();
+
+    /// <summary>Blocked user roles (admin, user, kid).</summary>
+    [JsonPropertyName("excludeUserRoles")]
+    public List<string> ExcludeUserRoles { get; set; } = new();
+
+    /// <summary>Allowed user IDs. Empty means all users.</summary>
+    [JsonPropertyName("includeUserIds")]
+    public List<string> IncludeUserIds { get; set; } = new();
+
+    /// <summary>Blocked user IDs.</summary>
+    [JsonPropertyName("excludeUserIds")]
+    public List<string> ExcludeUserIds { get; set; } = new();
+
+    /// <summary>Allowed library IDs. Empty means all libraries.</summary>
+    [JsonPropertyName("includeLibraryIds")]
+    public List<string> IncludeLibraryIds { get; set; } = new();
+
+    /// <summary>Blocked library IDs.</summary>
+    [JsonPropertyName("excludeLibraryIds")]
+    public List<string> ExcludeLibraryIds { get; set; } = new();
+
     /// <summary>When true, the announcement is hidden from all views and API responses.</summary>
     [JsonPropertyName("isArchived")]
     public bool IsArchived { get; set; }

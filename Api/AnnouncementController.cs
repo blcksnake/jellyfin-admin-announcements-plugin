@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net.Mime;
 using System.Reflection;
 using System.Text.Json.Serialization;
@@ -70,7 +71,48 @@ public class AnnouncementController : ControllerBase
         "session"
     };
 
+    private static readonly HashSet<string> ValidAudiences = new(System.StringComparer.OrdinalIgnoreCase)
+    {
+        "all",
+        "authenticated",
+        "unauthenticated",
+        "admins",
+        "nonadmins",
+        "kids",
+        "nonkids"
+    };
+
+    private static readonly HashSet<string> ValidDeviceTypes = new(System.StringComparer.OrdinalIgnoreCase)
+    {
+        "desktop",
+        "mobile",
+        "tablet",
+        "tv"
+    };
+
+    private static readonly HashSet<string> ValidUserRoles = new(System.StringComparer.OrdinalIgnoreCase)
+    {
+        "admin",
+        "user",
+        "kid"
+    };
+
     private readonly AnnouncementStore _store;
+
+    // Per-ID+IP throttle for anonymous analytics endpoints (prevent abuse / memory exhaustion)
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, long> _analyticsTicks = new();
+    private const int AnalyticsMinIntervalMs = 500;
+
+    private bool AllowAnalytics(string id)
+    {
+        var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+        var key = id + "|" + ip;
+        var now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        var last = _analyticsTicks.GetOrAdd(key, 0L);
+        if (now - last < AnalyticsMinIntervalMs) return false;
+        _analyticsTicks[key] = now;
+        return true;
+    }
 
     private static int PriorityFromLevel(string level)
     {
@@ -79,6 +121,30 @@ public class AnnouncementController : ControllerBase
         if (normalized == "warning") return 2;
         return 1;
     }
+
+    private static List<string> NormalizeList(IEnumerable<string>? values, bool toLower = false)
+    {
+        if (values is null)
+        {
+            return new List<string>();
+        }
+
+        var normalized = values
+            .Select(static value => (value ?? string.Empty).Trim())
+            .Where(static value => !string.IsNullOrWhiteSpace(value))
+            .Distinct(System.StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        if (!toLower)
+        {
+            return normalized;
+        }
+
+        return normalized.Select(static value => value.ToLowerInvariant()).ToList();
+    }
+
+    private static bool ContainsOnlyAllowed(IEnumerable<string> values, HashSet<string> allowed)
+        => values.All(allowed.Contains);
 
     public AnnouncementController()
     {
@@ -120,6 +186,21 @@ public class AnnouncementController : ControllerBase
         if (string.IsNullOrWhiteSpace(announcement.Message))
             return BadRequest("Message is required.");
 
+        if (announcement.Title.Length > 200)
+            return BadRequest("Title must be 200 characters or fewer.");
+
+        if (announcement.Message.Length > 5000)
+            return BadRequest("Message must be 5000 characters or fewer.");
+
+        if ((announcement.Tags?.Count ?? 0) > 50)
+            return BadRequest("Maximum 50 tags allowed.");
+
+        if ((announcement.IncludeUserIds?.Count ?? 0) > 500 || (announcement.ExcludeUserIds?.Count ?? 0) > 500)
+            return BadRequest("Maximum 500 user ID entries per list.");
+
+        if ((announcement.IncludeLibraryIds?.Count ?? 0) > 100 || (announcement.ExcludeLibraryIds?.Count ?? 0) > 100)
+            return BadRequest("Maximum 100 library ID entries per list.");
+
         if (string.IsNullOrWhiteSpace(announcement.Level) || !ValidLevels.Contains(announcement.Level))
             return BadRequest("Level must be one of: info, warning, danger.");
 
@@ -132,8 +213,35 @@ public class AnnouncementController : ControllerBase
         if (!ValidDismissModes.Contains(announcement.DismissMode))
             return BadRequest("DismissMode must be one of: permanent, session.");
 
+        if (string.IsNullOrWhiteSpace(announcement.Audience))
+            announcement.Audience = "all";
+
+        if (!ValidAudiences.Contains(announcement.Audience))
+            return BadRequest("Audience must be one of: all, authenticated, unauthenticated, admins, nonadmins, kids, nonkids.");
+
+        var includeDeviceTypes = NormalizeList(announcement.IncludeDeviceTypes, toLower: true);
+        var excludeDeviceTypes = NormalizeList(announcement.ExcludeDeviceTypes, toLower: true);
+        var includeUserRoles = NormalizeList(announcement.IncludeUserRoles, toLower: true);
+        var excludeUserRoles = NormalizeList(announcement.ExcludeUserRoles, toLower: true);
+
+        if (!ContainsOnlyAllowed(includeDeviceTypes, ValidDeviceTypes) || !ContainsOnlyAllowed(excludeDeviceTypes, ValidDeviceTypes))
+            return BadRequest("Device targeting values must be from: desktop, mobile, tablet, tv.");
+
+        if (!ContainsOnlyAllowed(includeUserRoles, ValidUserRoles) || !ContainsOnlyAllowed(excludeUserRoles, ValidUserRoles))
+            return BadRequest("User role targeting values must be from: admin, user, kid.");
+
+        announcement.IncludeDeviceTypes = includeDeviceTypes;
+        announcement.ExcludeDeviceTypes = excludeDeviceTypes;
+        announcement.IncludeUserRoles = includeUserRoles;
+        announcement.ExcludeUserRoles = excludeUserRoles;
+        announcement.IncludeUserIds = NormalizeList(announcement.IncludeUserIds);
+        announcement.ExcludeUserIds = NormalizeList(announcement.ExcludeUserIds);
+        announcement.IncludeLibraryIds = NormalizeList(announcement.IncludeLibraryIds);
+        announcement.ExcludeLibraryIds = NormalizeList(announcement.ExcludeLibraryIds);
+
         announcement.Level = announcement.Level.ToLowerInvariant();
         announcement.DismissMode = announcement.DismissMode.ToLowerInvariant();
+        announcement.Audience = announcement.Audience.ToLowerInvariant();
         announcement.Priority = PriorityFromLevel(announcement.Level);
         return Ok(_store.AddOrUpdate(announcement));
     }
@@ -275,10 +383,12 @@ public class AnnouncementController : ControllerBase
     [HttpPost("{id}/View")]
     [AllowAnonymous]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
     public IActionResult RecordView(string id)
     {
-        if (!string.IsNullOrWhiteSpace(id))
-            _store.RecordView(id);
+        if (string.IsNullOrWhiteSpace(id) || id.Length > 64) return NoContent();
+        if (!AllowAnalytics(id)) return StatusCode(StatusCodes.Status429TooManyRequests);
+        _store.RecordView(id);
         return NoContent();
     }
 
@@ -286,10 +396,12 @@ public class AnnouncementController : ControllerBase
     [HttpPost("{id}/Dismiss")]
     [AllowAnonymous]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
     public IActionResult RecordDismiss(string id)
     {
-        if (!string.IsNullOrWhiteSpace(id))
-            _store.RecordDismiss(id);
+        if (string.IsNullOrWhiteSpace(id) || id.Length > 64) return NoContent();
+        if (!AllowAnalytics(id)) return StatusCode(StatusCodes.Status429TooManyRequests);
+        _store.RecordDismiss(id);
         return NoContent();
     }
 
@@ -297,13 +409,13 @@ public class AnnouncementController : ControllerBase
     [HttpPost("{id}/Impression/Start")]
     [AllowAnonymous]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
     public IActionResult StartImpression(string id, [FromBody] ImpressionDto? dto)
     {
-        if (!string.IsNullOrWhiteSpace(id) && !string.IsNullOrWhiteSpace(dto?.SessionId))
-        {
-            _store.StartImpression(id, dto.SessionId);
-        }
-
+        if (string.IsNullOrWhiteSpace(id) || id.Length > 64) return NoContent();
+        if (string.IsNullOrWhiteSpace(dto?.SessionId) || dto.SessionId.Length > 128) return NoContent();
+        if (!AllowAnalytics(id)) return StatusCode(StatusCodes.Status429TooManyRequests);
+        _store.StartImpression(id, dto.SessionId);
         return NoContent();
     }
 
@@ -311,13 +423,13 @@ public class AnnouncementController : ControllerBase
     [HttpPost("{id}/Impression/End")]
     [AllowAnonymous]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
     public IActionResult EndImpression(string id, [FromBody] ImpressionDto? dto)
     {
-        if (!string.IsNullOrWhiteSpace(id) && !string.IsNullOrWhiteSpace(dto?.SessionId))
-        {
-            _store.EndImpression(id, dto.SessionId);
-        }
-
+        if (string.IsNullOrWhiteSpace(id) || id.Length > 64) return NoContent();
+        if (string.IsNullOrWhiteSpace(dto?.SessionId) || dto.SessionId.Length > 128) return NoContent();
+        if (!AllowAnalytics(id)) return StatusCode(StatusCodes.Status429TooManyRequests);
+        _store.EndImpression(id, dto.SessionId);
         return NoContent();
     }
 

@@ -2,7 +2,352 @@
 <html lang="en">
 <head>
     <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Announcements</title>
+    <style>
+        /* ── Design tokens ───────────────────────────────────────────────── */
+        :root {
+            --c-accent:       #0077e6;
+            --c-accent-dim:   #005ab5;
+            --c-surface-0:    #111518;
+            --c-surface-1:    #161d24;
+            --c-surface-2:    #1c2530;
+            --c-border:       #2a3945;
+            --c-border-light: #37474f;
+            --c-text:         #e0e0e0;
+            --c-text-dim:     #9eafbf;
+            --c-text-bright:  #ffffff;
+            --c-btn-muted:    #2e3d4a;
+            --c-success:      #1b5e20;
+            --c-success-hi:   #2e7d32;
+            --c-error:        #b71c1c;
+            --c-error-hi:     #d32f2f;
+            --c-warn:         #e65100;
+
+            --r-sm:  4px;
+            --r-md:  8px;
+            --r-lg:  10px;
+            --r-pill: 999px;
+
+            --fs-xs:  12px;
+            --fs-sm:  13px;
+            --fs-md:  14px;
+            --fs-base: 15px;
+            --fs-lg:  17px;
+            --fs-xl:  20px;
+        }
+
+        /* ── Shared utilities ────────────────────────────────────────────── */
+        .jf-flex       { display: flex; }
+        .jf-flex-col   { display: flex; flex-direction: column; }
+        .jf-grid-auto  { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; align-items: start; }
+        .jf-gap-6      { gap: 6px; }
+        .jf-gap-8      { gap: 8px; }
+        .jf-gap-10     { gap: 10px; }
+        .jf-gap-12     { gap: 12px; }
+        .jf-wrap       { flex-wrap: wrap; }
+        .jf-items-start { align-items: flex-start; }
+        .jf-items-center { align-items: center; }
+        .jf-between    { justify-content: space-between; }
+        .jf-end        { justify-content: flex-end; }
+
+        /* ── Tab bar ─────────────────────────────────────────────────────── */
+        .jf-tabs {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin: 12px 0 20px;
+        }
+        .jf-tab {
+            min-width: 148px;
+            font-weight: 600;
+            font-size: var(--fs-md);
+            padding: 8px 18px;
+            border-radius: var(--r-sm);
+            border: 1px solid transparent;
+            cursor: pointer;
+            transition: background 120ms, color 120ms;
+        }
+        .jf-tab--active {
+            background: var(--c-accent) !important;
+            color: var(--c-text-bright) !important;
+            border-color: var(--c-accent-dim);
+        }
+        .jf-tab--inactive {
+            background: var(--c-btn-muted) !important;
+            color: var(--c-text) !important;
+            border-color: var(--c-border);
+        }
+
+        /* ── Section panels ──────────────────────────────────────────────── */
+        .jf-panel {
+            padding: 16px;
+            border-radius: var(--r-lg);
+            background: var(--c-surface-1);
+            border: 1px solid var(--c-border);
+            margin-bottom: 16px;
+        }
+        .jf-panel--accent {
+            border-left: 3px solid var(--c-accent);
+        }
+        .jf-panel--muted {
+            border-left: 3px solid var(--c-border-light);
+        }
+        .jf-panel__title {
+            margin: 0 0 12px;
+            font-size: var(--fs-base);
+            font-weight: 700;
+            color: var(--c-text-bright);
+        }
+        .jf-panel__subtitle {
+            font-size: var(--fs-sm);
+            font-weight: 700;
+            color: var(--c-text);
+            margin-bottom: 8px;
+        }
+
+        /* ── Sub-card (targeting cells) ──────────────────────────────────── */
+        .jf-card {
+            padding: 14px;
+            background: var(--c-surface-0);
+            border: 1px solid var(--c-border);
+            border-radius: var(--r-md);
+        }
+        .jf-card__num {
+            font-size: var(--fs-md);
+            font-weight: 700;
+            color: var(--c-text-bright);
+            margin-bottom: 8px;
+        }
+
+        /* ── Tag input container ─────────────────────────────────────────── */
+        .jf-tag-input-wrap {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            align-items: center;
+            min-height: 36px;
+            padding: 6px 10px;
+            background: var(--c-surface-0);
+            border: 1px solid var(--c-border-light);
+            border-radius: var(--r-sm);
+        }
+        .jf-tag-input-wrap input {
+            flex: 1;
+            min-width: 120px;
+            border: none;
+            background: transparent;
+            color: var(--c-text-bright);
+            outline: none;
+            font-size: var(--fs-md);
+        }
+
+        /* ── Checkbox rows ───────────────────────────────────────────────── */
+        .jf-check-label {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            color: var(--c-text);
+            font-size: var(--fs-md);
+        }
+        .jf-check-label input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+        }
+        .jf-check-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+            margin-bottom: 8px;
+        }
+
+        /* ── Inline pills / badges ───────────────────────────────────────── */
+        .jf-pill {
+            display: inline-flex;
+            align-items: center;
+            padding: 2px 9px;
+            border-radius: var(--r-pill);
+            font-size: var(--fs-xs);
+            font-weight: 700;
+            letter-spacing: 0.03em;
+            color: #fff;
+        }
+        .jf-pill--info    { background: #1565c0; }
+        .jf-pill--warn    { background: #c77700; }
+        .jf-pill--danger  { background: #c62828; }
+        .jf-pill--active  { background: var(--c-success); }
+        .jf-pill--sched   { background: #37474f; }
+        .jf-pill--expired { background: #4e342e; }
+        .jf-pill--paused  { background: #4a148c; }
+        .jf-pill--arch    { background: #424242; }
+        .jf-pill--enabled { background: var(--c-success); }
+        .jf-pill--disabled{ background: #4a148c; }
+        .jf-pill--tag     { background: var(--c-surface-2); color: #aed6f8; border: 1px solid var(--c-border); }
+
+        /* ── Announcement list cards ─────────────────────────────────────── */
+        .jf-ann-card {
+            display: flex;
+            justify-content: space-between;
+            gap: 14px;
+            align-items: flex-start;
+            flex-wrap: wrap;
+            padding: 14px 16px;
+            margin: 10px 0;
+            border-radius: var(--r-md);
+            background: var(--c-surface-1);
+            border: 1px solid var(--c-border);
+            border-left-width: 4px;
+        }
+        .jf-ann-card--info    { border-left-color: #1565c0; }
+        .jf-ann-card--warning { border-left-color: #c77700; }
+        .jf-ann-card--danger  { border-left-color: #c62828; }
+
+        .jf-ann-card__body   { flex: 1; min-width: 280px; }
+        .jf-ann-card__badges { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 8px; }
+        .jf-ann-card__title  { font-weight: 700; font-size: var(--fs-lg); color: var(--c-text-bright); margin: 4px 0; }
+        .jf-ann-card__text   { font-size: var(--fs-md); color: var(--c-text-dim); line-height: 1.45; margin: 4px 0; }
+        .jf-ann-card__meta   { font-size: var(--fs-sm); color: var(--c-text-dim); margin-top: 4px; }
+        .jf-ann-card__tags   { display: flex; gap: 5px; flex-wrap: wrap; align-items: center; margin-top: 8px; }
+        .jf-ann-card__actions {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            align-items: flex-start;
+            justify-content: flex-end;
+            min-width: 200px;
+        }
+        /* action buttons inside list cards */
+        .jf-ann-card .emby-button {
+            background: var(--c-btn-muted) !important;
+            color: var(--c-text) !important;
+            border: 1px solid var(--c-border-light) !important;
+            font-size: var(--fs-sm);
+            padding: 5px 12px;
+        }
+        .jf-ann-card .editBtn {
+            background: #2e4a5a !important;
+            color: var(--c-text-bright) !important;
+        }
+        .jf-ann-card .deleteBtn {
+            background: #4a1515 !important;
+            color: #ffb3b3 !important;
+            border-color: #7a2020 !important;
+        }
+
+        /* ── Metrics grid ────────────────────────────────────────────────── */
+        .jf-metrics {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(88px, 1fr));
+            gap: 8px;
+            margin-top: 12px;
+        }
+        .jf-metric {
+            padding: 10px;
+            border-radius: var(--r-md);
+            background: var(--c-surface-0);
+            border: 1px solid var(--c-border);
+        }
+        .jf-metric__label { font-size: var(--fs-xs); color: var(--c-text-dim); margin-bottom: 2px; }
+        .jf-metric__value { font-size: 20px; font-weight: 700; color: var(--c-text-bright); }
+
+        /* ── Diagnostics grid ────────────────────────────────────────────── */
+        .jf-diag-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+        }
+        .jf-diag-cell {
+            padding: 12px;
+            border-radius: var(--r-md);
+            background: var(--c-surface-0);
+            border-left: 3px solid var(--c-accent);
+        }
+        .jf-diag-cell--muted { border-left-color: var(--c-border-light); }
+        .jf-diag-cell__label { font-size: var(--fs-sm); color: var(--c-text-dim); margin-bottom: 4px; }
+        .jf-diag-cell__value { font-weight: 700; font-size: var(--fs-base); color: var(--c-text); }
+        .jf-diag-cell__value--mono { font-family: monospace; font-size: var(--fs-xs); word-break: break-word; }
+
+        /* ── User picker chips ───────────────────────────────────────────── */
+        .jf-user-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            border-radius: var(--r-pill);
+            border: 1px solid var(--c-border-light);
+            background: var(--c-surface-1);
+            color: var(--c-text);
+            cursor: pointer;
+            font-size: var(--fs-sm);
+        }
+        .jf-user-chip--selected {
+            background: var(--c-success);
+            border-color: var(--c-success-hi);
+            color: #eaffea;
+        }
+
+        /* ── Status / diagnostic text colours ────────────────────────────── */
+        .jf-text-ok  { color: var(--c-success-hi); }
+        .jf-text-err { color: var(--c-error-hi); }
+        .jf-text-warn { color: var(--c-warn); }
+
+        .jf-hidden { display: none; }
+        .jf-mt-6 { margin-top: 6px; }
+        .jf-mt-8 { margin-top: 8px; }
+        .jf-mt-12 { margin-top: 12px; }
+        .jf-mt-section { margin-top: 1.5em; }
+        .jf-mb-0 { margin-bottom: 0; }
+        .jf-mb-4 { margin-bottom: 4px; }
+        .jf-mb-8 { margin-bottom: 8px; }
+        .jf-mb-10 { margin-bottom: 10px; }
+        .jf-mb-14 { margin-bottom: 14px; }
+        .jf-mb-16 { margin-bottom: 16px; }
+        .jf-ml-22 { margin-left: 22px; }
+        .jf-pb-2 { padding-bottom: 2px; }
+        .jf-textarea {
+            width: 100%;
+            min-height: 96px;
+            resize: vertical;
+        }
+        .jf-select-reset { margin: 0; }
+        .jf-filter-input {
+            margin: 0;
+            min-width: 200px;
+            flex: 1;
+        }
+        .jf-filter-select {
+            margin: 0;
+            min-width: 140px;
+        }
+        .jf-btn-sm {
+            padding: 5px 12px;
+            font-size: 13px;
+            background: var(--c-btn-muted) !important;
+            color: var(--c-text-bright) !important;
+            border: 1px solid var(--c-border-light) !important;
+        }
+        .jf-btn-sm-wide {
+            margin-top: 12px;
+            padding: 5px 14px;
+            font-size: 13px;
+            background: var(--c-btn-muted) !important;
+            color: var(--c-text-bright) !important;
+            border: 1px solid var(--c-border-light) !important;
+        }
+        .jf-settings-stack {
+            margin-top: 12px;
+            margin-bottom: 14px;
+        }
+
+        /* ── Save-settings inline message ────────────────────────────────── */
+        #SettingsMessage { margin-left: 12px; font-weight: 600; font-size: var(--fs-md); }
+
+        /* ── Form mode label ─────────────────────────────────────────────── */
+        #FormModeLabel { font-style: italic; }
+    </style>
 </head>
 <body>
 <div id="AnnouncementsConfigPage"
@@ -16,124 +361,220 @@
                     <h2 class="sectionTitle">Announcements</h2>
                 </div>
 
-                <div style="display:flex;gap:10px;margin:12px 0 18px 0;flex-wrap:wrap;">
-                    <button id="TabAnnouncements" is="emby-button" type="button" class="raised emby-button" style="background:#0066cc;color:#fff;min-width:150px;">
+                <!-- ── Tab bar ─────────────────────────────────────────── -->
+                <div class="jf-tabs">
+                    <button id="TabAnnouncements" is="emby-button" type="button" class="jf-tab jf-tab--active emby-button">
                         <span>Announcements</span>
                     </button>
-                    <button id="TabSettings" is="emby-button" type="button" class="emby-button" style="background:#2f3b45;color:#fff;min-width:150px;">
+                    <button id="TabSettings" is="emby-button" type="button" class="jf-tab jf-tab--inactive emby-button">
                         <span>Settings</span>
                     </button>
                 </div>
 
-                <div id="PluginSettingsSection" class="verticalSection" style="display:none;margin-bottom:2em;padding:16px;background:#1a1a1a;border-radius:4px;border-left:4px solid #0066cc;">
-                    <h3 style="color:#ffffff;margin-top:0;margin-bottom:16px;font-size:18px;font-weight:600;">⚙️ Plugin Settings</h3>
+                <!-- ── Plugin settings panel ───────────────────────────── -->
+                <div id="PluginSettingsSection" class="verticalSection jf-panel jf-panel--accent jf-hidden">
+                    <h3 class="jf-panel__title">Plugin Settings</h3>
+
                     <div class="inputContainer">
-                        <label class="inputLabel" style="color:#e0e0e0;display:block;margin-bottom:8px;font-weight:500;" for="CustomWebPath">Custom Web Directory (optional)</label>
-                        <input id="CustomWebPath" type="text" is="emby-input" placeholder="/usr/share/jellyfin/web or /opt/jellyfin/web" style="width:100%;padding:8px;background:#2a2a2a;color:#ffffff;border:1px solid #444;border-radius:3px;" />
-                        <div class="secondaryText" style="margin-top:8px;color:#aaaaaa;font-size:13px;">Leave empty for auto-detection. Path to the jellyfin-web directory containing index.html.</div>
+                        <label class="inputLabel" for="CustomWebPath">Custom Web Directory (optional)</label>
+                        <input id="CustomWebPath" type="text" is="emby-input"
+                               placeholder="/usr/share/jellyfin/web or /opt/jellyfin/web" />
+                        <div class="secondaryText jf-mt-6">Leave empty for auto-detection. Path to the jellyfin-web directory containing index.html.</div>
                     </div>
-                    <div class="inputContainer" style="margin-top:12px;">
-                        <label class="inputLabel" style="color:#e0e0e0;display:block;margin-bottom:8px;font-weight:500;" for="CustomIndexPath">Direct Path to index.html (optional)</label>
-                        <input id="CustomIndexPath" type="text" is="emby-input" placeholder="/usr/share/jellyfin/web/index.html" style="width:100%;padding:8px;background:#2a2a2a;color:#ffffff;border:1px solid #444;border-radius:3px;" />
-                        <div class="secondaryText" style="margin-top:8px;color:#aaaaaa;font-size:13px;">Direct path to index.html file. Takes priority over Custom Web Directory. Leave empty to use web directory setting.</div>
+
+                    <div class="inputContainer jf-mt-12">
+                        <label class="inputLabel" for="CustomIndexPath">Direct Path to index.html (optional)</label>
+                        <input id="CustomIndexPath" type="text" is="emby-input"
+                               placeholder="/usr/share/jellyfin/web/index.html" />
+                        <div class="secondaryText jf-mt-6">Takes priority over Custom Web Directory. Leave empty to use the web directory setting.</div>
                     </div>
-                    <div class="inputContainer" style="margin-top:12px;margin-bottom:12px;">
-                        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;color:#e0e0e0;">
-                            <input id="EnablePathLogging" type="checkbox" style="width:18px;height:18px;cursor:pointer;" />
-                            <span style="font-weight:500;">Enable verbose path resolution logging</span>
+
+                    <div class="inputContainer jf-settings-stack">
+                        <label class="jf-check-label">
+                            <input id="EnablePathLogging" type="checkbox" />
+                            Enable verbose path resolution logging
                         </label>
-                        <div class="secondaryText" style="margin-top:8px;color:#aaaaaa;font-size:13px;margin-left:26px;">Check this box to enable debug logging for troubleshooting path resolution issues. Check server logs after enabling.</div>
+                        <div class="secondaryText jf-mt-6 jf-ml-22">Logs debug information for troubleshooting path resolution. Check server logs after enabling.</div>
                     </div>
-                    <button id="SaveSettingsBtn" is="emby-button" type="button" class="raised button-submit emby-button" style="background:#0066cc;color:#ffffff;padding:10px 24px;border:none;border-radius:3px;cursor:pointer;font-weight:600;margin-top:8px;">
-                        <span>Save Settings</span>
-                    </button>
-                    <span id="SettingsMessage" style="margin-left:12px;display:none;font-weight:600;font-size:14px;"></span>
+
+                    <div class="jf-flex jf-items-center jf-gap-12">
+                        <button id="SaveSettingsBtn" is="emby-button" type="button" class="raised button-submit emby-button">
+                            <span>Save Settings</span>
+                        </button>
+                        <span id="SettingsMessage" class="jf-hidden"></span>
+                    </div>
                 </div>
 
+                <!-- ── Announcement editor ─────────────────────────────── -->
                 <div id="AnnouncementEditorSection">
 
-                <div class="inputContainer">
-                    <label class="inputLabel inputLabelUnfocused" for="Title">Title</label>
-                    <input id="Title" type="text" is="emby-input" required />
-                </div>
-
-                <div class="inputContainer">
-                    <label class="inputLabel inputLabelUnfocused" for="Message">Message</label>
-                    <textarea id="Message" style="width:100%;min-height:96px;resize:vertical" required></textarea>
-                </div>
-
-                <div class="selectContainer">
-                    <label class="selectLabel" for="Level">Severity</label>
-                    <select id="Level" is="emby-select" class="emby-select-withcolor emby-select">
-                        <option value="info">Info</option>
-                        <option value="warning">Warning</option>
-                        <option value="danger">Critical</option>
-                    </select>
-                    <div class="secondaryText" style="margin-top:6px;">Info = blue, Warning = amber, Critical = red.</div>
-                </div>
-
-                <div class="inputContainer">
-                    <label class="inputLabel inputLabelUnfocused" for="StartsAt">Starts At</label>
-                    <input id="StartsAt" type="datetime-local" is="emby-input" required />
-                </div>
-
-                <div class="inputContainer">
-                    <label class="inputLabel inputLabelUnfocused" for="EndsAt">Ends At (optional)</label>
-                    <input id="EndsAt" type="datetime-local" is="emby-input" />
-                </div>
-
-                <div class="inputContainer" style="margin-bottom:8px;">
-                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
-                        <input id="AnnouncementShowOnLoginPage" type="checkbox" />
-                        Show this announcement on the login page
-                    </label>
-                </div>
-
-                <div class="inputContainer" style="margin-bottom:8px;">
-                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
-                        <input id="AllowDismiss" type="checkbox" checked />
-                        Allow users to dismiss this announcement
-                    </label>
-                </div>
-
-                <div class="selectContainer" style="margin-bottom:12px;">
-                    <label class="selectLabel" for="DismissMode">Dismiss behavior</label>
-                    <select id="DismissMode" is="emby-select" class="emby-select-withcolor emby-select">
-                        <option value="permanent" selected>Remember dismissal on this browser</option>
-                        <option value="session">Dismiss only for this session</option>
-                    </select>
-                    <div class="secondaryText" style="margin-top:6px;">For a permanent message, uncheck "Allow users to dismiss this announcement".</div>
-                </div>
-
-                <div class="inputContainer" style="margin-bottom:12px;">
-                    <label class="inputLabel inputLabelUnfocused" for="TagsInput">Tags (optional)</label>
-                    <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;min-height:34px;padding:6px 8px;background:#1a1a1a;border:1px solid #444;border-radius:3px;" id="TagsContainer">
-                        <input id="TagsInput" type="text" placeholder="Add tag, press Enter" style="flex:1;min-width:120px;border:none;background:transparent;color:#fff;outline:none;font-size:14px;" />
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="Title">Title</label>
+                        <input id="Title" type="text" is="emby-input" required />
                     </div>
-                    <input type="hidden" id="TagsHidden" />
-                    <div class="secondaryText" style="margin-top:6px;">Press Enter or comma to add a tag. Tags help filter announcements in the list.</div>
-                </div>
 
-                <div style="display:flex;gap:10px;align-items:center;">
-                    <button id="SaveBtn" is="emby-button" type="submit" class="raised button-submit block emby-button">
-                        <span>Save Announcement</span>
-                    </button>
-                    <button id="CancelEditBtn" is="emby-button" type="button" class="emby-button" style="display:none;background:#455a64;color:#ffffff;border:1px solid #607d8b;">
-                        <span>Cancel Edit</span>
-                    </button>
-                    <span id="FormModeLabel" class="secondaryText" style="display:none;">Editing announcement</span>
-                </div>
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="Message">Message</label>
+                        <textarea id="Message" class="jf-textarea" required></textarea>
+                    </div>
+
+                    <div class="selectContainer">
+                        <label class="selectLabel" for="Level">Severity</label>
+                        <select id="Level" is="emby-select" class="emby-select-withcolor emby-select">
+                            <option value="info">Info</option>
+                            <option value="warning">Warning</option>
+                            <option value="danger">Critical</option>
+                        </select>
+                        <div class="secondaryText jf-mt-6">Info = blue, Warning = amber, Critical = red.</div>
+                    </div>
+
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="StartsAt">Starts At</label>
+                        <input id="StartsAt" type="datetime-local" is="emby-input" required />
+                    </div>
+
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="EndsAt">Ends At (optional)</label>
+                        <input id="EndsAt" type="datetime-local" is="emby-input" />
+                    </div>
+
+                    <div class="inputContainer jf-mb-8">
+                        <label class="jf-check-label">
+                            <input id="AnnouncementShowOnLoginPage" type="checkbox" />
+                            Show this announcement on the login page
+                        </label>
+                    </div>
+
+                    <div class="inputContainer jf-mb-8">
+                        <label class="jf-check-label">
+                            <input id="AllowDismiss" type="checkbox" checked />
+                            Allow users to dismiss this announcement
+                        </label>
+                    </div>
+
+                    <div class="selectContainer jf-mb-14">
+                        <label class="selectLabel" for="DismissMode">Dismiss behavior</label>
+                        <select id="DismissMode" is="emby-select" class="emby-select-withcolor emby-select">
+                            <option value="permanent" selected>Remember dismissal on this browser</option>
+                            <option value="session">Dismiss only for this session</option>
+                        </select>
+                        <div class="secondaryText jf-mt-6">For a permanent message, uncheck "Allow users to dismiss this announcement".</div>
+                    </div>
+
+                    <div class="inputContainer jf-mb-14">
+                        <label class="inputLabel inputLabelUnfocused" for="TagsInput">Tags (optional)</label>
+                        <div class="jf-tag-input-wrap" id="TagsContainer">
+                            <input id="TagsInput" type="text" placeholder="Add tag, press Enter" />
+                        </div>
+                        <input type="hidden" id="TagsHidden" />
+                        <div class="secondaryText jf-mt-6">Press Enter or comma to add a tag. Tags help filter announcements in the list.</div>
+                    </div>
+
+                    <!-- ── Targeting ──────────────────────────────────── -->
+                    <div class="jf-panel jf-mb-16">
+                        <h4 class="jf-panel__title jf-mb-4">Targeting</h4>
+                        <div class="secondaryText jf-mb-14">Set broad audience first, then narrow by role, device, or specific users.</div>
+
+                        <div class="jf-grid-auto">
+                            <!-- 1. Audience -->
+                            <div class="jf-card">
+                                <div class="jf-card__num">1. Audience</div>
+                                <div class="selectContainer jf-select-reset">
+                                    <label class="selectLabel" for="Audience">Who is this for?</label>
+                                    <select id="Audience" is="emby-select" class="emby-select-withcolor emby-select">
+                                        <option value="all" selected>Everyone</option>
+                                        <option value="authenticated">Signed-in users only</option>
+                                    </select>
+                                </div>
+                                <div class="secondaryText jf-mt-8">Use the login-page toggle above for login placement, and roles/users below for finer targeting.</div>
+                            </div>
+
+                            <!-- 2. Roles -->
+                            <div class="jf-card">
+                                <div class="jf-card__num">2. Roles</div>
+                                <div class="secondaryText jf-mb-8">Only Admin and User are exposed here.</div>
+                                <div class="jf-panel__subtitle">Include roles</div>
+                                <div class="jf-check-row">
+                                    <label class="jf-check-label"><input id="IncludeRoleAdmin" type="checkbox" />Admin</label>
+                                    <label class="jf-check-label"><input id="IncludeRoleUser"  type="checkbox" />User</label>
+                                </div>
+                                <div class="jf-panel__subtitle">Exclude roles</div>
+                                <div class="jf-check-row jf-mb-0">
+                                    <label class="jf-check-label"><input id="ExcludeRoleAdmin" type="checkbox" />Admin</label>
+                                    <label class="jf-check-label"><input id="ExcludeRoleUser"  type="checkbox" />User</label>
+                                </div>
+                            </div>
+
+                            <!-- 3. Devices -->
+                            <div class="jf-card">
+                                <div class="jf-card__num">3. Devices</div>
+                                <div class="jf-panel__subtitle">Include device types</div>
+                                <div class="jf-check-row">
+                                    <label class="jf-check-label"><input id="DeviceDesktop" type="checkbox" />Desktop</label>
+                                    <label class="jf-check-label"><input id="DeviceMobile"  type="checkbox" />Mobile</label>
+                                    <label class="jf-check-label"><input id="DeviceTablet"  type="checkbox" />Tablet</label>
+                                    <label class="jf-check-label"><input id="DeviceTv"      type="checkbox" />TV</label>
+                                </div>
+                                <div class="jf-panel__subtitle">Exclude device types</div>
+                                <div class="jf-check-row jf-mb-0">
+                                    <label class="jf-check-label"><input id="ExcludeDeviceDesktop" type="checkbox" />Desktop</label>
+                                    <label class="jf-check-label"><input id="ExcludeDeviceMobile"  type="checkbox" />Mobile</label>
+                                    <label class="jf-check-label"><input id="ExcludeDeviceTablet"  type="checkbox" />Tablet</label>
+                                    <label class="jf-check-label"><input id="ExcludeDeviceTv"      type="checkbox" />TV</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 4. Specific users -->
+                        <div class="jf-card jf-mt-12">
+                            <div class="jf-flex jf-between jf-wrap jf-gap-10 jf-items-center jf-mb-10">
+                                <div>
+                                    <div class="jf-card__num">4. Specific users</div>
+                                    <div class="secondaryText">Pick users already on this server — no raw IDs needed.</div>
+                                </div>
+                                <button id="RefreshUsersPickerBtn" is="emby-button" type="button" class="emby-button jf-btn-sm">
+                                    <span>Refresh users</span>
+                                </button>
+                            </div>
+
+                            <input id="IncludeUserIds" type="hidden" />
+                            <input id="ExcludeUserIds" type="hidden" />
+
+                            <div class="jf-grid-auto">
+                                <div>
+                                    <div class="jf-panel__subtitle">Only show to these users</div>
+                                    <div id="IncludeUserPicker" class="jf-flex jf-wrap jf-gap-6"></div>
+                                </div>
+                                <div>
+                                    <div class="jf-panel__subtitle">Hide from these users</div>
+                                    <div id="ExcludeUserPicker" class="jf-flex jf-wrap jf-gap-6"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ── Form actions ───────────────────────────────── -->
+                    <div class="jf-flex jf-gap-10 jf-items-center jf-mb-8">
+                        <button id="SaveBtn" is="emby-button" type="submit" class="raised button-submit block emby-button">
+                            <span>Save Announcement</span>
+                        </button>
+                        <button id="CancelEditBtn" is="emby-button" type="button" class="emby-button jf-hidden">
+                            <span>Cancel Edit</span>
+                        </button>
+                        <span id="FormModeLabel" class="secondaryText jf-hidden">Editing announcement</span>
+                    </div>
                 </div>
             </form>
 
-            <div id="AnnouncementListSection" class="verticalSection" style="margin-top:1.5em">
+            <!-- ── Announcement list ───────────────────────────────────── -->
+            <div id="AnnouncementListSection" class="verticalSection jf-mt-section">
                 <h3>Current Announcements</h3>
-                <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:8px;">
-                    <div class="inputContainer" style="margin:0;min-width:200px;flex:1;">
+                <div class="jf-flex jf-wrap jf-gap-10 jf-items-center jf-mb-10">
+                    <div class="inputContainer jf-filter-input">
                         <label class="inputLabel inputLabelUnfocused" for="SearchText">Search</label>
                         <input id="SearchText" type="text" is="emby-input" placeholder="Title or message" />
                     </div>
-                    <div class="selectContainer" style="margin:0;min-width:150px;">
+                    <div class="selectContainer jf-filter-select">
                         <label class="selectLabel" for="StatusFilter">Status</label>
                         <select id="StatusFilter" is="emby-select" class="emby-select-withcolor emby-select">
                             <option value="all" selected>All</option>
@@ -142,28 +583,27 @@
                             <option value="expired">Expired</option>
                         </select>
                     </div>
-                    <div class="selectContainer" style="margin:0;min-width:150px;">
-                        <label class="selectLabel" for="TagFilter">Tag filter</label>
+                    <div class="selectContainer jf-filter-select">
+                        <label class="selectLabel" for="TagFilter">Tag</label>
                         <select id="TagFilter" is="emby-select" class="emby-select-withcolor emby-select">
                             <option value="">All tags</option>
                         </select>
                     </div>
-                    <div style="display:flex;align-items:center;gap:6px;padding-bottom:4px;">
-                        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;color:#e0e0e0;font-size:13px;">
-                            <input id="ShowArchivedChk" type="checkbox" style="width:16px;height:16px;" />
-                            Show archived
-                        </label>
-                    </div>
+                    <label class="jf-check-label jf-pb-2">
+                        <input id="ShowArchivedChk" type="checkbox" />
+                        Show archived
+                    </label>
                 </div>
                 <div id="AnnouncementsList"></div>
             </div>
 
-            <div id="DiagnosticsSection" class="verticalSection" style="display:none;margin-top:1.5em;padding:16px;background:#1a1a1a;border-radius:4px;border-left:4px solid #546e7a;">
-                <h3 style="color:#ffffff;margin-top:0;margin-bottom:16px;font-size:16px;font-weight:600;">🔍 Operational Diagnostics</h3>
+            <!-- ── Diagnostics panel ───────────────────────────────────── -->
+            <div id="DiagnosticsSection" class="verticalSection jf-panel jf-panel--muted jf-hidden jf-mt-section">
+                <h3 class="jf-panel__title">Operational Diagnostics</h3>
                 <div id="DiagnosticsPanel">
-                    <div class="secondaryText" style="color:#aaa;">Loading diagnostics…</div>
+                    <div class="secondaryText">Loading diagnostics…</div>
                 </div>
-                <button id="RefreshDiagnosticsBtn" is="emby-button" type="button" class="emby-button" style="margin-top:10px;padding:6px 16px;font-size:13px;background:#455a64;color:#ffffff;border:1px solid #607d8b;">
+                <button id="RefreshDiagnosticsBtn" is="emby-button" type="button" class="emby-button jf-btn-sm-wide">
                     <span>Refresh</span>
                 </button>
             </div>
@@ -172,6 +612,137 @@
 
     <script type="text/javascript">
         (function () {
+            function ensureConfigStyles() {
+                if (document.getElementById('jf-announcements-config-runtime-styles')) {
+                    return;
+                }
+
+                var style = document.createElement('style');
+                style.id = 'jf-announcements-config-runtime-styles';
+                style.textContent = `
+:root {
+    --c-accent:#0077e6;
+    --c-accent-dim:#005ab5;
+    --c-surface-0:#111518;
+    --c-surface-1:#161d24;
+    --c-surface-2:#1c2530;
+    --c-border:#2a3945;
+    --c-border-light:#37474f;
+    --c-text:#e0e0e0;
+    --c-text-dim:#9eafbf;
+    --c-text-bright:#ffffff;
+    --c-btn-muted:#2e3d4a;
+    --c-success:#1b5e20;
+    --c-success-hi:#2e7d32;
+    --c-error-hi:#d32f2f;
+    --c-warn:#e65100;
+    --r-sm:4px;
+    --r-md:8px;
+    --r-lg:10px;
+    --r-pill:999px;
+    --fs-xs:12px;
+    --fs-sm:13px;
+    --fs-md:14px;
+    --fs-base:15px;
+    --fs-lg:17px;
+}
+#AnnouncementsConfigPage .content-primary { max-width: 1120px; }
+#AnnouncementsConfigPage .jf-flex { display:flex; }
+#AnnouncementsConfigPage .jf-flex-col { display:flex; flex-direction:column; }
+#AnnouncementsConfigPage .jf-grid-auto { display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:12px; align-items:start; }
+#AnnouncementsConfigPage .jf-gap-6 { gap:6px; }
+#AnnouncementsConfigPage .jf-gap-10 { gap:10px; }
+#AnnouncementsConfigPage .jf-gap-12 { gap:12px; }
+#AnnouncementsConfigPage .jf-wrap { flex-wrap:wrap; }
+#AnnouncementsConfigPage .jf-items-center { align-items:center; }
+#AnnouncementsConfigPage .jf-between { justify-content:space-between; }
+#AnnouncementsConfigPage .jf-tabs { display:flex; gap:8px; flex-wrap:wrap; margin:12px 0 20px; }
+#AnnouncementsConfigPage .jf-tab { min-width:148px; font-weight:600; font-size:var(--fs-md); padding:8px 18px; border-radius:var(--r-sm); border:1px solid transparent; cursor:pointer; transition:background 120ms,color 120ms,border-color 120ms; }
+#AnnouncementsConfigPage .jf-tab--active { background:var(--c-accent) !important; color:var(--c-text-bright) !important; border-color:var(--c-accent-dim) !important; }
+#AnnouncementsConfigPage .jf-tab--inactive { background:var(--c-btn-muted) !important; color:var(--c-text) !important; border-color:var(--c-border) !important; }
+#AnnouncementsConfigPage .jf-panel { padding:16px; border-radius:var(--r-lg); background:var(--c-surface-1); border:1px solid var(--c-border); margin-bottom:16px; box-shadow:0 1px 0 rgba(255,255,255,0.02) inset; }
+#AnnouncementsConfigPage .jf-panel--accent { border-left:3px solid var(--c-accent); }
+#AnnouncementsConfigPage .jf-panel--muted { border-left:3px solid var(--c-border-light); }
+#AnnouncementsConfigPage .jf-panel__title { margin:0 0 12px; font-size:var(--fs-base); font-weight:700; color:var(--c-text-bright); }
+#AnnouncementsConfigPage .jf-panel__subtitle { font-size:var(--fs-sm); font-weight:700; color:var(--c-text); margin-bottom:8px; }
+#AnnouncementsConfigPage .jf-card { padding:14px; background:var(--c-surface-0); border:1px solid var(--c-border); border-radius:var(--r-md); }
+#AnnouncementsConfigPage .jf-card__num { font-size:var(--fs-md); font-weight:700; color:var(--c-text-bright); margin-bottom:8px; }
+#AnnouncementsConfigPage .jf-tag-input-wrap { display:flex; gap:6px; flex-wrap:wrap; align-items:center; min-height:36px; padding:6px 10px; background:var(--c-surface-0); border:1px solid var(--c-border-light); border-radius:var(--r-sm); }
+#AnnouncementsConfigPage .jf-tag-input-wrap input { flex:1; min-width:120px; border:none; background:transparent; color:var(--c-text-bright); outline:none; font-size:var(--fs-md); }
+#AnnouncementsConfigPage .jf-check-label { display:inline-flex; align-items:center; gap:6px; cursor:pointer; color:var(--c-text); font-size:var(--fs-md); }
+#AnnouncementsConfigPage .jf-check-row { display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-bottom:8px; }
+#AnnouncementsConfigPage .jf-pill { display:inline-flex; align-items:center; padding:2px 9px; border-radius:var(--r-pill); font-size:var(--fs-xs); font-weight:700; letter-spacing:0.03em; color:#fff; }
+#AnnouncementsConfigPage .jf-pill--info { background:#1565c0; }
+#AnnouncementsConfigPage .jf-pill--warn { background:#c77700; }
+#AnnouncementsConfigPage .jf-pill--danger { background:#c62828; }
+#AnnouncementsConfigPage .jf-pill--active, #AnnouncementsConfigPage .jf-pill--enabled { background:var(--c-success); }
+#AnnouncementsConfigPage .jf-pill--sched { background:#37474f; }
+#AnnouncementsConfigPage .jf-pill--expired { background:#4e342e; }
+#AnnouncementsConfigPage .jf-pill--paused, #AnnouncementsConfigPage .jf-pill--disabled { background:#4a148c; }
+#AnnouncementsConfigPage .jf-pill--arch { background:#424242; }
+#AnnouncementsConfigPage .jf-pill--tag { background:var(--c-surface-2); color:#aed6f8; border:1px solid var(--c-border); }
+#AnnouncementsConfigPage .jf-ann-card { display:flex; justify-content:space-between; gap:14px; align-items:flex-start; flex-wrap:wrap; padding:14px 16px; margin:10px 0; border-radius:var(--r-md); background:var(--c-surface-1); border:1px solid var(--c-border); border-left-width:4px; }
+#AnnouncementsConfigPage .jf-ann-card--info { border-left-color:#1565c0; }
+#AnnouncementsConfigPage .jf-ann-card--warning { border-left-color:#c77700; }
+#AnnouncementsConfigPage .jf-ann-card--danger { border-left-color:#c62828; }
+#AnnouncementsConfigPage .jf-ann-card__body { flex:1; min-width:280px; }
+#AnnouncementsConfigPage .jf-ann-card__badges { display:flex; gap:5px; flex-wrap:wrap; margin-bottom:8px; }
+#AnnouncementsConfigPage .jf-ann-card__title { font-weight:700; font-size:var(--fs-lg); color:var(--c-text-bright); margin:4px 0; }
+#AnnouncementsConfigPage .jf-ann-card__text { font-size:var(--fs-md); color:var(--c-text-dim); line-height:1.45; margin:4px 0; }
+#AnnouncementsConfigPage .jf-ann-card__meta { font-size:var(--fs-sm); color:var(--c-text-dim); margin-top:4px; }
+#AnnouncementsConfigPage .jf-ann-card__tags { display:flex; gap:5px; flex-wrap:wrap; align-items:center; margin-top:8px; }
+#AnnouncementsConfigPage .jf-ann-card__actions { display:flex; gap:6px; flex-wrap:wrap; align-items:flex-start; justify-content:flex-end; min-width:200px; }
+#AnnouncementsConfigPage .jf-ann-card .emby-button { background:var(--c-btn-muted) !important; color:var(--c-text) !important; border:1px solid var(--c-border-light) !important; font-size:var(--fs-sm); padding:5px 12px; }
+#AnnouncementsConfigPage .jf-ann-card .editBtn { background:#2e4a5a !important; color:var(--c-text-bright) !important; }
+#AnnouncementsConfigPage .jf-ann-card .deleteBtn { background:#4a1515 !important; color:#ffb3b3 !important; border-color:#7a2020 !important; }
+#AnnouncementsConfigPage .jf-metrics { display:grid; grid-template-columns:repeat(3,minmax(88px,1fr)); gap:8px; margin-top:12px; }
+#AnnouncementsConfigPage .jf-metric { padding:10px; border-radius:var(--r-md); background:var(--c-surface-0); border:1px solid var(--c-border); }
+#AnnouncementsConfigPage .jf-metric__label { font-size:var(--fs-xs); color:var(--c-text-dim); margin-bottom:2px; }
+#AnnouncementsConfigPage .jf-metric__value { font-size:20px; font-weight:700; color:var(--c-text-bright); }
+#AnnouncementsConfigPage .jf-diag-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:12px; }
+#AnnouncementsConfigPage .jf-diag-cell { padding:12px; border-radius:var(--r-md); background:var(--c-surface-0); border-left:3px solid var(--c-accent); }
+#AnnouncementsConfigPage .jf-diag-cell--muted { border-left-color:var(--c-border-light); }
+#AnnouncementsConfigPage .jf-diag-cell__label { font-size:var(--fs-sm); color:var(--c-text-dim); margin-bottom:4px; }
+#AnnouncementsConfigPage .jf-diag-cell__value { font-weight:700; font-size:var(--fs-base); color:var(--c-text); }
+#AnnouncementsConfigPage .jf-diag-cell__value--mono { font-family:monospace; font-size:var(--fs-xs); word-break:break-word; }
+#AnnouncementsConfigPage .jf-user-chip { display:inline-flex; align-items:center; gap:6px; padding:4px 10px; border-radius:var(--r-pill); border:1px solid var(--c-border-light); background:var(--c-surface-1); color:var(--c-text); cursor:pointer; font-size:var(--fs-sm); }
+#AnnouncementsConfigPage .jf-user-chip--selected { background:var(--c-success); border-color:var(--c-success-hi); color:#eaffea; }
+#AnnouncementsConfigPage .jf-hidden { display:none; }
+#AnnouncementsConfigPage .jf-text-ok { color:var(--c-success-hi); }
+#AnnouncementsConfigPage .jf-text-err { color:var(--c-error-hi); }
+#AnnouncementsConfigPage .jf-text-warn { color:var(--c-warn); }
+#AnnouncementsConfigPage .jf-mt-6 { margin-top:6px; }
+#AnnouncementsConfigPage .jf-mt-8 { margin-top:8px; }
+#AnnouncementsConfigPage .jf-mt-12 { margin-top:12px; }
+#AnnouncementsConfigPage .jf-mt-section { margin-top:1.5em; }
+#AnnouncementsConfigPage .jf-mb-0 { margin-bottom:0; }
+#AnnouncementsConfigPage .jf-mb-4 { margin-bottom:4px; }
+#AnnouncementsConfigPage .jf-mb-8 { margin-bottom:8px; }
+#AnnouncementsConfigPage .jf-mb-10 { margin-bottom:10px; }
+#AnnouncementsConfigPage .jf-mb-14 { margin-bottom:14px; }
+#AnnouncementsConfigPage .jf-mb-16 { margin-bottom:16px; }
+#AnnouncementsConfigPage .jf-ml-22 { margin-left:22px; }
+#AnnouncementsConfigPage .jf-pb-2 { padding-bottom:2px; }
+#AnnouncementsConfigPage .jf-textarea { width:100%; min-height:96px; resize:vertical; }
+#AnnouncementsConfigPage .jf-select-reset { margin:0; }
+#AnnouncementsConfigPage .jf-filter-input { margin:0; min-width:200px; flex:1; }
+#AnnouncementsConfigPage .jf-filter-select { margin:0; min-width:140px; }
+#AnnouncementsConfigPage .jf-btn-sm { padding:5px 12px; font-size:13px; }
+#AnnouncementsConfigPage .jf-btn-sm { background:var(--c-btn-muted) !important; color:var(--c-text-bright) !important; border:1px solid var(--c-border-light) !important; }
+#AnnouncementsConfigPage .jf-btn-sm-wide { margin-top:12px; padding:5px 14px; font-size:13px; background:var(--c-btn-muted) !important; color:var(--c-text-bright) !important; border:1px solid var(--c-border-light) !important; }
+#AnnouncementsConfigPage .jf-settings-stack { margin-top:12px; margin-bottom:14px; }
+#AnnouncementsConfigPage #SettingsMessage { margin-left:12px; font-weight:600; font-size:14px; }
+#AnnouncementsConfigPage #FormModeLabel { font-style:italic; }
+@media (max-width: 900px) {
+    #AnnouncementsConfigPage .jf-ann-card__actions { min-width:0; justify-content:flex-start; }
+}
+                `;
+
+                (document.head || document.documentElement).appendChild(style);
+            }
+
+            ensureConfigStyles();
+
             var apiBase = 'Plugins/Announcements';
             var page = document.querySelector('#AnnouncementsConfigPage');
             var form = document.querySelector('#AnnouncementsForm');
@@ -196,6 +767,24 @@
             var tagsInputEl = document.querySelector('#TagsInput');
             var tagsHiddenEl = document.querySelector('#TagsHidden');
             var tagsContainerEl = document.querySelector('#TagsContainer');
+            var audienceEl = document.querySelector('#Audience');
+            var deviceDesktopEl = document.querySelector('#DeviceDesktop');
+            var deviceMobileEl = document.querySelector('#DeviceMobile');
+            var deviceTabletEl = document.querySelector('#DeviceTablet');
+            var deviceTvEl = document.querySelector('#DeviceTv');
+            var excludeDeviceDesktopEl = document.querySelector('#ExcludeDeviceDesktop');
+            var excludeDeviceMobileEl = document.querySelector('#ExcludeDeviceMobile');
+            var excludeDeviceTabletEl = document.querySelector('#ExcludeDeviceTablet');
+            var excludeDeviceTvEl = document.querySelector('#ExcludeDeviceTv');
+            var includeRoleAdminEl = document.querySelector('#IncludeRoleAdmin');
+            var includeRoleUserEl = document.querySelector('#IncludeRoleUser');
+            var excludeRoleAdminEl = document.querySelector('#ExcludeRoleAdmin');
+            var excludeRoleUserEl = document.querySelector('#ExcludeRoleUser');
+            var includeUserIdsEl = document.querySelector('#IncludeUserIds');
+            var excludeUserIdsEl = document.querySelector('#ExcludeUserIds');
+            var includeUserPickerEl = document.querySelector('#IncludeUserPicker');
+            var excludeUserPickerEl = document.querySelector('#ExcludeUserPicker');
+            var refreshUsersPickerBtn = document.querySelector('#RefreshUsersPickerBtn');
             var cancelEditBtn = document.querySelector('#CancelEditBtn');
             var formModeLabel = document.querySelector('#FormModeLabel');
             var saveBtnText = document.querySelector('#SaveBtn span');
@@ -203,7 +792,6 @@
             var statusFilterEl = document.querySelector('#StatusFilter');
             var tagFilterEl = document.querySelector('#TagFilter');
             var showArchivedChk = document.querySelector('#ShowArchivedChk');
-
             var customWebPathEl = document.querySelector('#CustomWebPath');
             var customIndexPathEl = document.querySelector('#CustomIndexPath');
             var enablePathLoggingEl = document.querySelector('#EnablePathLogging');
@@ -217,16 +805,13 @@
             var activeTab = 'announcements';
             var settingsLoaded = false;
             var diagnosticsLoaded = false;
+            var availableUsers = [];
 
-            function apiUrl(path) {
-                return ApiClient.getUrl(path);
-            }
+            function apiUrl(path) { return ApiClient.getUrl(path); }
 
             function authHeaders(extra) {
                 var headers = { 'X-Emby-Token': ApiClient.accessToken() };
-                if (extra) {
-                    Object.keys(extra).forEach(function (key) { headers[key] = extra[key]; });
-                }
+                if (extra) { Object.keys(extra).forEach(function (k) { headers[k] = extra[k]; }); }
                 return headers;
             }
 
@@ -235,228 +820,336 @@
                 return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
             }
 
-            function pad2(n) {
-                return String(n).padStart(2, '0');
-            }
+            function pad2(n) { return String(n).padStart(2, '0'); }
 
             function toDateTimeLocalValue(d) {
-                return d.getFullYear() + '-' +
-                    pad2(d.getMonth() + 1) + '-' +
-                    pad2(d.getDate()) + 'T' +
-                    pad2(d.getHours()) + ':' +
-                    pad2(d.getMinutes());
+                return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()) +
+                    'T' + pad2(d.getHours()) + ':' + pad2(d.getMinutes());
             }
 
             function fromLocalInput(value) {
-                if (!value) {
-                    return null;
-                }
+                if (!value) return null;
                 var d = new Date(value);
                 return isNaN(d.getTime()) ? null : d.toISOString();
             }
 
             function toLocalInput(value) {
-                if (!value) {
-                    return '';
-                }
+                if (!value) return '';
                 var d = new Date(value);
-                if (isNaN(d.getTime())) {
-                    return '';
-                }
+                if (isNaN(d.getTime())) return '';
                 d.setSeconds(0, 0);
                 return toDateTimeLocalValue(d);
             }
 
-            function levelTag(level) {
-                var color = level === 'danger' ? '#d32f2f' : (level === 'warning' ? '#f9a825' : '#1976d2');
-                return '<span style="display:inline-block;padding:2px 8px;border-radius:999px;background:' + color + ';color:#fff;font-size:12px;font-weight:600;">' + esc((level || 'info').toUpperCase()) + '</span>';
+            function parseCsv(value, lower) {
+                return (value || '').split(',')
+                    .map(function (p) { var t = String(p || '').trim(); return lower ? t.toLowerCase() : t; })
+                    .filter(function (p) { return !!p; })
+                    .filter(function (p, i, arr) {
+                        return arr.findIndex(function (e) { return e.toLowerCase() === p.toLowerCase(); }) === i;
+                    });
             }
 
-            function pill(text, background, color) {
-                return '<span style="display:inline-block;padding:2px 8px;border-radius:999px;background:' + background + ';color:' + color + ';font-size:12px;font-weight:600;">' + esc(text) + '</span>';
+            function toCsv(values) { return (values || []).join(','); }
+
+            function selectedDeviceTypes() {
+                var t = [];
+                if (deviceDesktopEl.checked) t.push('desktop');
+                if (deviceMobileEl.checked)  t.push('mobile');
+                if (deviceTabletEl.checked)  t.push('tablet');
+                if (deviceTvEl.checked)      t.push('tv');
+                return t;
+            }
+
+            function selectedExcludedDeviceTypes() {
+                var t = [];
+                if (excludeDeviceDesktopEl.checked) t.push('desktop');
+                if (excludeDeviceMobileEl.checked)  t.push('mobile');
+                if (excludeDeviceTabletEl.checked)  t.push('tablet');
+                if (excludeDeviceTvEl.checked)      t.push('tv');
+                return t;
+            }
+
+            function selectedIncludeRoles() {
+                var r = [];
+                if (includeRoleAdminEl.checked) r.push('admin');
+                if (includeRoleUserEl.checked)  r.push('user');
+                return r;
+            }
+
+            function selectedExcludeRoles() {
+                var r = [];
+                if (excludeRoleAdminEl.checked) r.push('admin');
+                if (excludeRoleUserEl.checked)  r.push('user');
+                return r;
+            }
+
+            function setSelectedDeviceTypes(values) {
+                var n = (values || []).map(function (v) { return String(v || '').toLowerCase(); });
+                deviceDesktopEl.checked = n.indexOf('desktop') >= 0;
+                deviceMobileEl.checked  = n.indexOf('mobile')  >= 0;
+                deviceTabletEl.checked  = n.indexOf('tablet')  >= 0;
+                deviceTvEl.checked      = n.indexOf('tv')      >= 0;
+            }
+
+            function setSelectedExcludedDeviceTypes(values) {
+                var n = (values || []).map(function (v) { return String(v || '').toLowerCase(); });
+                excludeDeviceDesktopEl.checked = n.indexOf('desktop') >= 0;
+                excludeDeviceMobileEl.checked  = n.indexOf('mobile')  >= 0;
+                excludeDeviceTabletEl.checked  = n.indexOf('tablet')  >= 0;
+                excludeDeviceTvEl.checked      = n.indexOf('tv')      >= 0;
+            }
+
+            function setSelectedRoles(values, adminEl, userEl) {
+                var n = (values || []).map(function (v) { return String(v || '').toLowerCase(); });
+                adminEl.checked = n.indexOf('admin') >= 0;
+                userEl.checked  = n.indexOf('user')  >= 0;
+            }
+
+            function readInputList(el) { return parseCsv(el.value, false); }
+            function setInputList(el, values) { el.value = toCsv(values || []); }
+
+            function normalizeId(value) {
+                return String(value || '').trim().replace(/-/g, '').toLowerCase();
+            }
+
+            function mapUser(user) {
+                var policy = user && user.Policy ? user.Policy : {};
+                var flags = [];
+                if (policy.IsAdministrator === true) flags.push('admin');
+                if (policy.IsKid === true || policy.IsKids === true || user.IsKid === true) flags.push('kid');
+                var name = (user && (user.Name || user.Username)) || 'Unknown user';
+                if (flags.length) name += ' (' + flags.join(', ') + ')';
+                return { id: String((user && (user.Id || user.UserId || user.InternalId)) || ''), name: name };
+            }
+
+            function renderPicker(container, options, selectedValues, onToggle) {
+                if (!options.length) {
+                    container.innerHTML = '<span class="secondaryText">No users available.</span>';
+                    return;
+                }
+                container.innerHTML = options.map(function (opt) {
+                    var checked = selectedValues.some(function (v) { return normalizeId(v) === normalizeId(opt.id); });
+                    var cls = 'jf-user-chip' + (checked ? ' jf-user-chip--selected' : '');
+                    return '<label class="' + cls + '">' +
+                        '<input type="checkbox" data-id="' + esc(opt.id) + '"' + (checked ? ' checked' : '') + ' />' +
+                        '<span>' + esc(opt.name) + '</span>' +
+                        '</label>';
+                }).join('');
+                Array.prototype.forEach.call(container.querySelectorAll('input[type="checkbox"]'), function (box) {
+                    box.addEventListener('change', function () {
+                        onToggle(String(box.getAttribute('data-id') || ''), !!box.checked);
+                    });
+                });
+            }
+
+            function renderUserPickers() {
+                var includeValues = readInputList(includeUserIdsEl);
+                var excludeValues = readInputList(excludeUserIdsEl);
+
+                renderPicker(includeUserPickerEl, availableUsers, includeValues, function (id, enabled) {
+                    var inc = readInputList(includeUserIdsEl);
+                    var exc = readInputList(excludeUserIdsEl);
+                    if (enabled) { inc.push(id); exc = exc.filter(function (v) { return normalizeId(v) !== normalizeId(id); }); }
+                    else         { inc = inc.filter(function (v) { return normalizeId(v) !== normalizeId(id); }); }
+                    setInputList(includeUserIdsEl, parseCsv(inc.join(','), false));
+                    setInputList(excludeUserIdsEl, parseCsv(exc.join(','), false));
+                    renderUserPickers();
+                });
+
+                renderPicker(excludeUserPickerEl, availableUsers, excludeValues, function (id, enabled) {
+                    var inc = readInputList(includeUserIdsEl);
+                    var exc = readInputList(excludeUserIdsEl);
+                    if (enabled) { exc.push(id); inc = inc.filter(function (v) { return normalizeId(v) !== normalizeId(id); }); }
+                    else         { exc = exc.filter(function (v) { return normalizeId(v) !== normalizeId(id); }); }
+                    setInputList(includeUserIdsEl, parseCsv(inc.join(','), false));
+                    setInputList(excludeUserIdsEl, parseCsv(exc.join(','), false));
+                    renderUserPickers();
+                });
+            }
+
+            function loadUserPickerData() {
+                function setUsers(rows) {
+                    availableUsers = (rows || []).map(mapUser)
+                        .filter(function (u) { return !!u.id; })
+                        .sort(function (a, b) { return a.name.localeCompare(b.name); });
+                    renderUserPickers();
+                }
+                fetch(apiUrl('Users/Query'), { headers: authHeaders() })
+                    .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+                    .then(function (p) {
+                        var rows = Array.isArray(p && p.Items) ? p.Items : [];
+                        if (!rows.length) throw new Error('empty');
+                        setUsers(rows);
+                    })
+                    .catch(function () {
+                        fetch(apiUrl('Users'), { headers: authHeaders() })
+                            .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+                            .then(function (users) { setUsers(Array.isArray(users) ? users : []); })
+                            .catch(function () { availableUsers = []; renderUserPickers(); });
+                    });
+            }
+
+            /* ── Badge helpers ───────────────────────────────────────── */
+            function levelPill(level) {
+                var cls = level === 'danger' ? 'jf-pill--danger' : level === 'warning' ? 'jf-pill--warn' : 'jf-pill--info';
+                return '<span class="jf-pill ' + cls + '">' + esc((level || 'info').toUpperCase()) + '</span>';
+            }
+
+            function pill(text, mod) {
+                return '<span class="jf-pill jf-pill--' + mod + '">' + esc(text) + '</span>';
             }
 
             function tagPills(tags) {
-                if (!tags || !tags.length) {
-                    return '<span class="secondaryText">No tags</span>';
-                }
-
-                return tags.map(function (tag) {
-                    return pill('#' + tag, '#263238', '#d5ecff');
-                }).join(' ');
+                if (!tags || !tags.length) return '<span class="secondaryText">No tags</span>';
+                return tags.map(function (t) { return '<span class="jf-pill jf-pill--tag">#' + esc(t) + '</span>'; }).join(' ');
             }
 
             function getScheduleStatus(a) {
                 var now = new Date();
                 var starts = new Date(a.startsAt);
                 var ends = a.endsAt ? new Date(a.endsAt) : null;
-
-                if (!a.isEnabled) {
-                    return 'paused';
-                }
-                if (a.isArchived) {
-                    return 'archived';
-                }
-                if (!isNaN(starts.getTime()) && now < starts) {
-                    return 'scheduled';
-                }
-                if (ends && !isNaN(ends.getTime()) && now > ends) {
-                    return 'expired';
-                }
-
+                if (!a.isEnabled) return 'paused';
+                if (a.isArchived) return 'archived';
+                if (!isNaN(starts.getTime()) && now < starts) return 'scheduled';
+                if (ends && !isNaN(ends.getTime()) && now > ends) return 'expired';
                 return 'active';
             }
 
-            function statusTag(status) {
-                var colors = {
-                    active: ['#2e7d32', '#ffffff'],
-                    scheduled: ['#455a64', '#ffffff'],
-                    expired: ['#6d4c41', '#ffffff'],
-                    paused: ['#6a1b9a', '#ffffff'],
-                    archived: ['#424242', '#ffffff']
-                };
-                var palette = colors[status] || ['#455a64', '#ffffff'];
-                return pill(status, palette[0], palette[1]);
+            function statusPill(status) {
+                var modMap = { active:'active', scheduled:'sched', expired:'expired', paused:'paused', archived:'arch' };
+                return pill(status, modMap[status] || 'sched');
             }
 
             function formatDate(value, fallback) {
-                if (!value) {
-                    return fallback || 'None';
-                }
+                if (!value) return fallback || 'None';
                 var d = new Date(value);
                 return isNaN(d.getTime()) ? (fallback || 'Invalid') : d.toLocaleString();
             }
 
             function showStatus(text, isError) {
-                if (isError) {
-                    Dashboard.alert({ title: 'Announcements', message: text });
-                    return;
-                }
-
-                try {
-                    require(['toast'], function (toast) { toast({ text: text }); });
-                } catch (e) {
-                    console.info('[Announcements]', text);
-                }
+                if (isError) { Dashboard.alert({ title: 'Announcements', message: text }); return; }
+                try { require(['toast'], function (toast) { toast({ text: text }); }); } catch (e) { console.info('[Announcements]', text); }
             }
 
             function setActiveTab(tabName) {
                 activeTab = tabName === 'settings' ? 'settings' : 'announcements';
                 var isSettings = activeTab === 'settings';
 
-                pluginSettingsSection.style.display = isSettings ? '' : 'none';
-                diagnosticsSection.style.display = isSettings ? '' : 'none';
-                announcementEditorSection.style.display = isSettings ? 'none' : '';
-                announcementListSection.style.display = isSettings ? 'none' : '';
+                pluginSettingsSection.classList.toggle('jf-hidden', !isSettings);
+                diagnosticsSection.classList.toggle('jf-hidden', !isSettings);
+                announcementEditorSection.classList.toggle('jf-hidden', isSettings);
+                announcementListSection.classList.toggle('jf-hidden', isSettings);
 
-                tabAnnouncementsBtn.style.background = isSettings ? '#2f3b45' : '#0066cc';
-                tabSettingsBtn.style.background = isSettings ? '#0066cc' : '#2f3b45';
+                pluginSettingsSection.style.display = isSettings ? 'block' : 'none';
+                diagnosticsSection.style.display = isSettings ? 'block' : 'none';
+                announcementEditorSection.style.display = isSettings ? 'none' : 'block';
+                announcementListSection.style.display = isSettings ? 'none' : 'block';
+
+                tabAnnouncementsBtn.className = 'jf-tab ' + (isSettings ? 'jf-tab--inactive' : 'jf-tab--active') + ' emby-button';
+                tabSettingsBtn.className      = 'jf-tab ' + (isSettings ? 'jf-tab--active'   : 'jf-tab--inactive') + ' emby-button';
 
                 if (isSettings) {
-                    if (!settingsLoaded) {
-                        loadPathConfig();
-                        settingsLoaded = true;
-                    }
-                    if (!diagnosticsLoaded) {
-                        loadDiagnostics();
-                        diagnosticsLoaded = true;
-                    }
+                    if (!settingsLoaded)   { loadPathConfig();  settingsLoaded = true; }
+                    if (!diagnosticsLoaded){ loadDiagnostics(); diagnosticsLoaded = true; }
                 }
             }
 
             function syncDismissUi() {
                 dismissModeEl.disabled = !allowDismissEl.checked;
-                dismissModeEl.style.opacity = allowDismissEl.checked ? '1' : '0.55';
+                dismissModeEl.style.opacity = allowDismissEl.checked ? '1' : '0.5';
             }
 
-            function normalizeTag(tag) {
-                return (tag || '').trim().replace(/^#+/, '');
-            }
+            function normalizeTag(tag) { return (tag || '').trim().replace(/^#+/, ''); }
 
             function renderTagEditor() {
-                Array.prototype.slice.call(tagsContainerEl.querySelectorAll('.jf-tag-chip')).forEach(function (el) {
-                    el.remove();
-                });
-
+                Array.prototype.slice.call(tagsContainerEl.querySelectorAll('.jf-tag-chip')).forEach(function (el) { el.remove(); });
                 formTags.forEach(function (tag, index) {
                     var chip = document.createElement('span');
-                    chip.className = 'jf-tag-chip';
-                    chip.style.cssText = 'display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border-radius:999px;background:#263238;color:#d5ecff;font-size:12px;font-weight:600;';
-                    chip.innerHTML = '<span>#' + esc(tag) + '</span><button type="button" data-index="' + index + '" style="border:none;background:transparent;color:#9fd3ff;cursor:pointer;font-size:14px;line-height:1;">&times;</button>';
+                    chip.className = 'jf-tag-chip jf-pill jf-pill--tag';
+                    chip.style.cssText = 'display:inline-flex;align-items:center;gap:5px;';
+                    chip.innerHTML = '<span>#' + esc(tag) + '</span>' +
+                        '<button type="button" data-index="' + index + '" style="border:none;background:transparent;color:inherit;cursor:pointer;font-size:14px;line-height:1;padding:0 2px;">&times;</button>';
                     tagsContainerEl.insertBefore(chip, tagsInputEl);
                 });
-
                 tagsHiddenEl.value = JSON.stringify(formTags);
-
-                Array.prototype.slice.call(tagsContainerEl.querySelectorAll('.jf-tag-chip button')).forEach(function (button) {
-                    button.addEventListener('click', function () {
-                        var index = parseInt(button.getAttribute('data-index'), 10);
-                        if (!isNaN(index)) {
-                            formTags.splice(index, 1);
-                            renderTagEditor();
-                        }
+                Array.prototype.slice.call(tagsContainerEl.querySelectorAll('.jf-tag-chip button')).forEach(function (btn) {
+                    btn.addEventListener('click', function () {
+                        var idx = parseInt(btn.getAttribute('data-index'), 10);
+                        if (!isNaN(idx)) { formTags.splice(idx, 1); renderTagEditor(); }
                     });
                 });
             }
 
             function addTag(tag) {
-                var normalized = normalizeTag(tag);
-                if (!normalized) {
-                    return;
-                }
-
-                var exists = formTags.some(function (value) {
-                    return value.toLowerCase() === normalized.toLowerCase();
-                });
-                if (!exists) {
-                    formTags.push(normalized);
+                var n = normalizeTag(tag);
+                if (!n) return;
+                if (!formTags.some(function (v) { return v.toLowerCase() === n.toLowerCase(); })) {
+                    formTags.push(n);
                     formTags.sort(function (a, b) { return a.localeCompare(b); });
                     renderTagEditor();
                 }
             }
 
             function resetForm(keepTimes) {
-                editingId = null;
-                editingMeta = null;
-                titleEl.value = '';
-                messageEl.value = '';
-                levelEl.value = 'info';
-                if (!keepTimes) {
-                    var now = new Date();
-                    now.setSeconds(0, 0);
-                    startsAtEl.value = toDateTimeLocalValue(now);
-                }
+                editingId = null; editingMeta = null;
+                titleEl.value = ''; messageEl.value = ''; levelEl.value = 'info';
+                if (!keepTimes) { var now = new Date(); now.setSeconds(0, 0); startsAtEl.value = toDateTimeLocalValue(now); }
                 endsAtEl.value = '';
                 showOnLoginEl.checked = false;
                 allowDismissEl.checked = true;
                 dismissModeEl.value = 'permanent';
-                formTags = [];
-                renderTagEditor();
-                syncDismissUi();
+                formTags = []; renderTagEditor();
+                audienceEl.value = 'all';
+                setSelectedDeviceTypes([]); setSelectedExcludedDeviceTypes([]);
+                setSelectedRoles([], includeRoleAdminEl, includeRoleUserEl);
+                setSelectedRoles([], excludeRoleAdminEl, excludeRoleUserEl);
+                includeUserIdsEl.value = ''; excludeUserIdsEl.value = '';
+                renderUserPickers(); syncDismissUi();
+                cancelEditBtn.classList.add('jf-hidden');
+                formModeLabel.classList.add('jf-hidden');
                 cancelEditBtn.style.display = 'none';
                 formModeLabel.style.display = 'none';
                 saveBtnText.textContent = 'Save Announcement';
             }
 
             function beginEdit(item) {
-                editingId = item.id;
-                editingMeta = item;
-                titleEl.value = item.title || '';
-                messageEl.value = item.message || '';
-                levelEl.value = item.level || 'info';
-                startsAtEl.value = toLocalInput(item.startsAt);
-                endsAtEl.value = toLocalInput(item.endsAt);
+                editingId = item.id; editingMeta = item;
+                titleEl.value = item.title || ''; messageEl.value = item.message || ''; levelEl.value = item.level || 'info';
+                startsAtEl.value = toLocalInput(item.startsAt); endsAtEl.value = toLocalInput(item.endsAt);
                 showOnLoginEl.checked = !!item.showOnLoginPage;
                 allowDismissEl.checked = item.allowDismiss !== false;
                 dismissModeEl.value = item.dismissMode || 'permanent';
                 formTags = (item.tags || []).slice().sort(function (a, b) { return a.localeCompare(b); });
                 renderTagEditor();
-                syncDismissUi();
+                audienceEl.value = item.audience || 'all';
+                setSelectedDeviceTypes(item.includeDeviceTypes || []);
+                setSelectedExcludedDeviceTypes(item.excludeDeviceTypes || []);
+                setSelectedRoles(item.includeUserRoles || [], includeRoleAdminEl, includeRoleUserEl);
+                setSelectedRoles(item.excludeUserRoles || [], excludeRoleAdminEl, excludeRoleUserEl);
+                includeUserIdsEl.value = toCsv(item.includeUserIds || []);
+                excludeUserIdsEl.value = toCsv(item.excludeUserIds || []);
+                renderUserPickers(); syncDismissUi();
+                cancelEditBtn.classList.remove('jf-hidden');
+                formModeLabel.classList.remove('jf-hidden');
                 cancelEditBtn.style.display = 'inline-flex';
                 formModeLabel.style.display = 'inline';
                 formModeLabel.textContent = 'Editing announcement';
                 saveBtnText.textContent = 'Update Announcement';
                 window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+
+            function targetingSummary(item) {
+                var parts = [];
+                var audience = (item.audience || 'all').toLowerCase();
+                if (audience !== 'all') parts.push('Audience: ' + audience);
+                if ((item.includeDeviceTypes || []).length) parts.push('Devices: ' + item.includeDeviceTypes.join(', '));
+                if ((item.excludeDeviceTypes || []).length) parts.push('Devices\u2212: ' + item.excludeDeviceTypes.join(', '));
+                if ((item.includeUserRoles   || []).length) parts.push('Roles+: ' + item.includeUserRoles.join(', '));
+                if ((item.excludeUserRoles   || []).length) parts.push('Roles\u2212: ' + item.excludeUserRoles.join(', '));
+                if ((item.includeUserIds     || []).length) parts.push('Users+: ' + item.includeUserIds.length);
+                if ((item.excludeUserIds     || []).length) parts.push('Users\u2212: ' + item.excludeUserIds.length);
+                return parts.length ? parts.join(' \u00B7 ') : 'Targeting: all';
             }
 
             function getFilteredItems(items) {
@@ -467,59 +1160,40 @@
 
                 return items.filter(function (item) {
                     var status = getScheduleStatus(item);
-                    var tags = (item.tags || []).map(function (tag) { return String(tag).toLowerCase(); });
+                    var tags = (item.tags || []).map(function (t) { return String(t).toLowerCase(); });
                     var hay = ((item.title || '') + ' ' + (item.message || '') + ' ' + tags.join(' ')).toLowerCase();
-
-                    if (!includeArchived && item.isArchived) {
-                        return false;
-                    }
-                    if (statusFilter !== 'all' && status !== statusFilter) {
-                        return false;
-                    }
-                    if (selectedTag && tags.indexOf(selectedTag) === -1) {
-                        return false;
-                    }
-                    if (query && hay.indexOf(query) === -1) {
-                        return false;
-                    }
-
+                    if (!includeArchived && item.isArchived) return false;
+                    if (statusFilter !== 'all' && status !== statusFilter) return false;
+                    if (selectedTag && tags.indexOf(selectedTag) === -1) return false;
+                    if (query && hay.indexOf(query) === -1) return false;
                     return true;
                 });
             }
 
             function updateTagFilterOptions(items) {
-                var currentValue = tagFilterEl.value;
+                var current = tagFilterEl.value;
                 var tags = [];
-
                 items.forEach(function (item) {
-                    (item.tags || []).forEach(function (tag) {
-                        if (tags.every(function (existing) { return existing.toLowerCase() !== String(tag).toLowerCase(); })) {
-                            tags.push(String(tag));
-                        }
+                    (item.tags || []).forEach(function (t) {
+                        if (tags.every(function (e) { return e.toLowerCase() !== String(t).toLowerCase(); })) tags.push(String(t));
                     });
                 });
-
                 tags.sort(function (a, b) { return a.localeCompare(b); });
-                tagFilterEl.innerHTML = '<option value="">All tags</option>' + tags.map(function (tag) {
-                    return '<option value="' + esc(tag) + '">' + esc(tag) + '</option>';
-                }).join('');
-
-                if (currentValue && tags.some(function (tag) { return tag.toLowerCase() === currentValue.toLowerCase(); })) {
-                    tagFilterEl.value = currentValue;
-                }
+                tagFilterEl.innerHTML = '<option value="">All tags</option>' +
+                    tags.map(function (t) { return '<option value="' + esc(t) + '">' + esc(t) + '</option>'; }).join('');
+                if (current && tags.some(function (t) { return t.toLowerCase() === current.toLowerCase(); })) tagFilterEl.value = current;
             }
 
             function renderMetrics(item) {
-                return '<div style="display:grid;grid-template-columns:repeat(3,minmax(90px,1fr));gap:8px;margin-top:10px;">' +
-                    '<div style="padding:8px;border-radius:8px;background:#161d24;"><div class="secondaryText">Views</div><div style="font-size:18px;font-weight:700;">' + esc(item.viewCount || 0) + '</div></div>' +
-                    '<div style="padding:8px;border-radius:8px;background:#161d24;"><div class="secondaryText">Dismisses</div><div style="font-size:18px;font-weight:700;">' + esc(item.dismissCount || 0) + '</div></div>' +
-                    '<div style="padding:8px;border-radius:8px;background:#161d24;"><div class="secondaryText">Active impressions</div><div style="font-size:18px;font-weight:700;">' + esc(item.activeImpressions || 0) + '</div></div>' +
+                return '<div class="jf-metrics">' +
+                    '<div class="jf-metric"><div class="jf-metric__label">Views</div><div class="jf-metric__value">' + esc(item.viewCount || 0) + '</div></div>' +
+                    '<div class="jf-metric"><div class="jf-metric__label">Dismisses</div><div class="jf-metric__value">' + esc(item.dismissCount || 0) + '</div></div>' +
+                    '<div class="jf-metric"><div class="jf-metric__label">Active impressions</div><div class="jf-metric__value">' + esc(item.activeImpressions || 0) + '</div></div>' +
                     '</div>';
             }
 
             function renderList(items) {
                 updateTagFilterOptions(items);
-
                 var filtered = getFilteredItems(items);
                 if (!filtered.length) {
                     listEl.innerHTML = '<div class="secondaryText">No announcements match the current filter.</div>';
@@ -527,255 +1201,171 @@
                 }
 
                 listEl.innerHTML = filtered.map(function (item) {
+                    var level  = item.level || 'info';
                     var starts = formatDate(item.startsAt, 'Not set');
-                    var ends = formatDate(item.endsAt, 'No expiry');
-                    var scope = item.showOnLoginPage ? 'Login + app' : 'App only';
+                    var ends   = formatDate(item.endsAt, 'No expiry');
+                    var scope  = item.showOnLoginPage ? 'Login + app' : 'App only';
                     var dismissRule = item.allowDismiss === false ? 'Not dismissible' : ('Dismiss: ' + (item.dismissMode || 'permanent'));
                     var status = getScheduleStatus(item);
+                    var targeting = targetingSummary(item);
 
-                    return '<div class="card" style="padding:14px;margin:10px 0;border-left:4px solid ' + (item.level === 'danger' ? '#d32f2f' : item.level === 'warning' ? '#f9a825' : '#1976d2') + ';">' +
-                        '<div style="display:flex;justify-content:space-between;gap:14px;align-items:flex-start;flex-wrap:wrap;">' +
-                        '<div style="flex:1;min-width:280px;">' +
-                        '<div style="display:flex;gap:6px;flex-wrap:wrap;">' + levelTag(item.level) + statusTag(status) + (item.isEnabled ? pill('enabled', '#1b5e20', '#fff') : pill('disabled', '#4a148c', '#fff')) + (item.isArchived ? pill('archived', '#424242', '#fff') : '') + '</div>' +
-                        '<div style="font-weight:700;font-size:17px;margin-top:8px;">' + esc(item.title) + '</div>' +
-                        '<div class="secondaryText" style="margin-top:4px;line-height:1.45;">' + esc(item.message) + '</div>' +
-                        '<div class="secondaryText" style="margin-top:8px;">Starts: ' + esc(starts) + ' | Ends: ' + esc(ends) + '</div>' +
-                        '<div class="secondaryText" style="margin-top:4px;">Scope: ' + esc(scope) + ' | ' + esc(dismissRule) + '</div>' +
-                        '<div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;align-items:center;">' + tagPills(item.tags || []) + '</div>' +
+                    return '<div class="jf-ann-card jf-ann-card--' + esc(level) + '">' +
+                        '<div class="jf-ann-card__body">' +
+                        '<div class="jf-ann-card__badges">' +
+                            levelPill(level) + statusPill(status) +
+                            (item.isEnabled ? pill('enabled', 'enabled') : pill('disabled', 'disabled')) +
+                            (item.isArchived ? pill('archived', 'arch') : '') +
+                        '</div>' +
+                        '<div class="jf-ann-card__title">' + esc(item.title) + '</div>' +
+                        '<div class="jf-ann-card__text">' + esc(item.message) + '</div>' +
+                        '<div class="jf-ann-card__meta">Starts: ' + esc(starts) + ' &nbsp;&middot;&nbsp; Ends: ' + esc(ends) + '</div>' +
+                        '<div class="jf-ann-card__meta">Scope: ' + esc(scope) + ' &nbsp;&middot;&nbsp; ' + esc(dismissRule) + '</div>' +
+                        '<div class="jf-ann-card__meta">' + esc(targeting) + '</div>' +
+                        '<div class="jf-ann-card__tags">' + tagPills(item.tags || []) + '</div>' +
                         renderMetrics(item) +
                         '</div>' +
-                        '<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:flex-start;justify-content:flex-end;min-width:220px;">' +
-                        '<button is="emby-button" class="raised emby-button editBtn" style="background:#546e7a;color:#fff;" data-id="' + esc(item.id) + '"><span>Edit</span></button>' +
+                        '<div class="jf-ann-card__actions">' +
+                        '<button is="emby-button" class="raised emby-button editBtn" data-id="' + esc(item.id) + '"><span>Edit</span></button>' +
                         '<button is="emby-button" class="emby-button duplicateBtn" data-id="' + esc(item.id) + '"><span>Duplicate</span></button>' +
                         '<button is="emby-button" class="emby-button toggleEnableBtn" data-id="' + esc(item.id) + '" data-value="' + esc(item.isEnabled ? 'false' : 'true') + '"><span>' + esc(item.isEnabled ? 'Disable' : 'Enable') + '</span></button>' +
                         '<button is="emby-button" class="emby-button toggleArchiveBtn" data-id="' + esc(item.id) + '" data-value="' + esc(item.isArchived ? 'false' : 'true') + '"><span>' + esc(item.isArchived ? 'Unarchive' : 'Archive') + '</span></button>' +
-                        '<button is="emby-button" class="raised button-submit emby-button deleteBtn" data-id="' + esc(item.id) + '"><span>Delete</span></button>' +
-                        '</div>' +
+                        '<button is="emby-button" class="raised emby-button deleteBtn" data-id="' + esc(item.id) + '"><span>Delete</span></button>' +
                         '</div>' +
                         '</div>';
                 }).join('');
 
                 function bindButtons(selector, handler) {
                     Array.prototype.forEach.call(listEl.querySelectorAll(selector), function (btn) {
-                        btn.addEventListener('click', function (ev) {
-                            ev.preventDefault();
-                            handler(btn);
-                        });
+                        btn.addEventListener('click', function (ev) { ev.preventDefault(); handler(btn); });
                     });
                 }
 
                 bindButtons('.editBtn', function (btn) {
-                    var id = btn.getAttribute('data-id');
-                    var item = allItems.find(function (entry) { return entry.id === id; });
-                    if (item) {
-                        beginEdit(item);
-                    }
+                    var item = allItems.find(function (e) { return e.id === btn.getAttribute('data-id'); });
+                    if (item) beginEdit(item);
                 });
-
-                bindButtons('.deleteBtn', function (btn) {
-                    deleteAnnouncement(btn.getAttribute('data-id'));
-                });
-
-                bindButtons('.duplicateBtn', function (btn) {
-                    duplicateAnnouncement(btn.getAttribute('data-id'));
-                });
-
+                bindButtons('.deleteBtn', function (btn) { deleteAnnouncement(btn.getAttribute('data-id')); });
+                bindButtons('.duplicateBtn', function (btn) { duplicateAnnouncement(btn.getAttribute('data-id')); });
                 bindButtons('.toggleArchiveBtn', function (btn) {
                     toggleAnnouncementFlag(btn.getAttribute('data-id'), 'Archive', btn.getAttribute('data-value') === 'true');
                 });
-
                 bindButtons('.toggleEnableBtn', function (btn) {
                     toggleAnnouncementFlag(btn.getAttribute('data-id'), 'Enable', btn.getAttribute('data-value') === 'true');
-                });
-
-                // Add inline styles to ensure button visibility
-                Array.prototype.forEach.call(listEl.querySelectorAll('.duplicateBtn, .toggleArchiveBtn, .toggleEnableBtn'), function (btn) {
-                    btn.style.background = '#546e7a';
-                    btn.style.color = '#fff';
                 });
             }
 
             function loadAnnouncements() {
                 Dashboard.showLoadingMsg();
                 fetch(apiUrl(apiBase + '/Admin'), { headers: authHeaders() })
-                    .then(function (response) {
+                    .then(function (r) {
                         Dashboard.hideLoadingMsg();
-                        if (!response.ok) {
-                            showStatus('Failed to load announcements (HTTP ' + response.status + ').', true);
-                            return null;
-                        }
-
-                        return response.json();
+                        if (!r.ok) { showStatus('Failed to load announcements (HTTP ' + r.status + ').', true); return null; }
+                        return r.json();
                     })
-                    .then(function (items) {
-                        if (!items) {
-                            return;
-                        }
-
-                        allItems = items || [];
-                        renderList(allItems);
-                    })
-                    .catch(function () {
-                        Dashboard.hideLoadingMsg();
-                        showStatus('Failed to load announcements.', true);
-                    });
+                    .then(function (items) { if (items) { allItems = items || []; renderList(allItems); } })
+                    .catch(function () { Dashboard.hideLoadingMsg(); showStatus('Failed to load announcements.', true); });
             }
 
             function deleteAnnouncement(id) {
-                if (!id) {
-                    return;
-                }
-
+                if (!id) return;
                 Dashboard.confirm('Delete this announcement?', 'Delete', function (confirmed) {
-                    if (!confirmed) {
-                        return;
-                    }
-
+                    if (!confirmed) return;
                     Dashboard.showLoadingMsg();
-                    fetch(apiUrl(apiBase + '/Admin/' + encodeURIComponent(id)), {
-                        method: 'DELETE',
-                        headers: authHeaders()
-                    })
-                        .then(function (response) {
+                    fetch(apiUrl(apiBase + '/Admin/' + encodeURIComponent(id)), { method: 'DELETE', headers: authHeaders() })
+                        .then(function (r) {
                             Dashboard.hideLoadingMsg();
-                            if (!response.ok) {
-                                showStatus('Delete failed (HTTP ' + response.status + ').', true);
-                                return;
-                            }
-
-                            if (editingId === id) {
-                                resetForm(true);
-                            }
-
+                            if (!r.ok) { showStatus('Delete failed (HTTP ' + r.status + ').', true); return; }
+                            if (editingId === id) resetForm(true);
                             showStatus('Announcement deleted.');
                             loadAnnouncements();
                         })
-                        .catch(function () {
-                            Dashboard.hideLoadingMsg();
-                            showStatus('Delete failed.', true);
-                        });
+                        .catch(function () { Dashboard.hideLoadingMsg(); showStatus('Delete failed.', true); });
                 });
             }
 
             function duplicateAnnouncement(id) {
                 Dashboard.showLoadingMsg();
-                fetch(apiUrl(apiBase + '/Admin/' + encodeURIComponent(id) + '/Duplicate'), {
-                    method: 'POST',
-                    headers: authHeaders()
-                })
-                    .then(function (response) {
+                fetch(apiUrl(apiBase + '/Admin/' + encodeURIComponent(id) + '/Duplicate'), { method: 'POST', headers: authHeaders() })
+                    .then(function (r) {
                         Dashboard.hideLoadingMsg();
-                        if (!response.ok) {
-                            showStatus('Duplicate failed (HTTP ' + response.status + ').', true);
-                            return null;
-                        }
-                        return response.json();
+                        if (!r.ok) { showStatus('Duplicate failed (HTTP ' + r.status + ').', true); return null; }
+                        return r.json();
                     })
-                    .then(function (item) {
-                        if (!item) {
-                            return;
-                        }
-                        showStatus('Announcement duplicated as disabled draft.');
-                        loadAnnouncements();
-                        beginEdit(item);
-                    })
-                    .catch(function () {
-                        Dashboard.hideLoadingMsg();
-                        showStatus('Duplicate failed.', true);
-                    });
+                    .then(function (item) { if (item) { showStatus('Announcement duplicated as disabled draft.'); loadAnnouncements(); beginEdit(item); } })
+                    .catch(function () { Dashboard.hideLoadingMsg(); showStatus('Duplicate failed.', true); });
             }
 
             function toggleAnnouncementFlag(id, action, value) {
                 Dashboard.showLoadingMsg();
                 fetch(apiUrl(apiBase + '/Admin/' + encodeURIComponent(id) + '/' + action), {
-                    method: 'POST',
-                    headers: authHeaders({ 'Content-Type': 'application/json' }),
-                    body: JSON.stringify({ value: !!value })
+                    method: 'POST', headers: authHeaders({ 'Content-Type': 'application/json' }), body: JSON.stringify({ value: !!value })
                 })
-                    .then(function (response) {
+                    .then(function (r) {
                         Dashboard.hideLoadingMsg();
-                        if (!response.ok) {
-                            showStatus(action + ' failed (HTTP ' + response.status + ').', true);
-                            return;
-                        }
+                        if (!r.ok) { showStatus(action + ' failed (HTTP ' + r.status + ').', true); return; }
                         showStatus('Announcement updated.');
                         loadAnnouncements();
                     })
-                    .catch(function () {
-                        Dashboard.hideLoadingMsg();
-                        showStatus(action + ' failed.', true);
-                    });
+                    .catch(function () { Dashboard.hideLoadingMsg(); showStatus(action + ' failed.', true); });
             }
 
             function showSettingsMessage(text, isError) {
                 settingsMessageEl.textContent = text;
+                settingsMessageEl.classList.remove('jf-hidden');
                 settingsMessageEl.style.display = 'inline';
-                settingsMessageEl.style.color = isError ? '#d32f2f' : '#2e7d32';
+                settingsMessageEl.className = isError ? 'jf-text-err' : 'jf-text-ok';
                 setTimeout(function () {
                     settingsMessageEl.style.display = 'none';
+                    settingsMessageEl.classList.add('jf-hidden');
                 }, 4000);
             }
 
             function renderDiagnostics(data) {
-                var injectionMode = data && data.injectionMode ? esc(data.injectionMode) : 'Unknown';
-                var resolvedPath = data && data.resolvedIndexPath ? esc(data.resolvedIndexPath) : 'Not applicable';
-                var startupTime = data && data.startupTime ? esc(formatDate(data.startupTime)) : 'Unknown';
-                var version = data && data.pluginVersion ? esc(data.pluginVersion) : 'Unknown';
-
+                var injectionMode  = data && data.injectionMode    ? esc(data.injectionMode)    : 'Unknown';
+                var resolvedPath   = data && data.resolvedIndexPath ? esc(data.resolvedIndexPath) : 'Not applicable';
+                var startupTime    = data && data.startupTime       ? esc(formatDate(data.startupTime)) : 'Unknown';
+                var version        = data && data.pluginVersion     ? esc(data.pluginVersion)    : 'Unknown';
                 diagnosticsPanelEl.innerHTML =
-                    '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;">' +
-                    '<div style="padding:12px;border-radius:8px;background:#10161b;border-left:3px solid #0066cc;"><div class="secondaryText">Injection mode</div><div style="font-weight:700;font-size:16px;color:#e0e0e0;margin-top:4px;">' + injectionMode + '</div></div>' +
-                    '<div style="padding:12px;border-radius:8px;background:#10161b;border-left:3px solid #546e7a;"><div class="secondaryText">Resolved index path</div><div style="font-weight:700;font-size:12px;color:#e0e0e0;margin-top:4px;word-break:break-word;font-family:monospace;">' + resolvedPath + '</div></div>' +
-                    '<div style="padding:12px;border-radius:8px;background:#10161b;border-left:3px solid #0066cc;"><div class="secondaryText">Plugin startup time</div><div style="font-weight:700;font-size:13px;color:#e0e0e0;margin-top:4px;">' + startupTime + '</div></div>' +
-                    '<div style="padding:12px;border-radius:8px;background:#10161b;border-left:3px solid #546e7a;"><div class="secondaryText">Plugin version</div><div style="font-weight:700;font-size:16px;color:#e0e0e0;margin-top:4px;">' + version + '</div></div>' +
+                    '<div class="jf-diag-grid">' +
+                    '<div class="jf-diag-cell"><div class="jf-diag-cell__label">Injection mode</div><div class="jf-diag-cell__value">' + injectionMode + '</div></div>' +
+                    '<div class="jf-diag-cell jf-diag-cell--muted"><div class="jf-diag-cell__label">Resolved index path</div><div class="jf-diag-cell__value jf-diag-cell__value--mono">' + resolvedPath + '</div></div>' +
+                    '<div class="jf-diag-cell"><div class="jf-diag-cell__label">Plugin startup time</div><div class="jf-diag-cell__value">' + startupTime + '</div></div>' +
+                    '<div class="jf-diag-cell jf-diag-cell--muted"><div class="jf-diag-cell__label">Plugin version</div><div class="jf-diag-cell__value">' + version + '</div></div>' +
                     '</div>';
             }
 
             function loadDiagnostics() {
-                diagnosticsPanelEl.innerHTML = '<div class="secondaryText" style="color:#aaa;">Loading diagnostics…</div>';
+                diagnosticsPanelEl.innerHTML = '<div class="secondaryText">Loading diagnostics…</div>';
                 setTimeout(function () {
                     fetch(apiUrl(apiBase + '/Admin/Diagnostics'), { headers: authHeaders() })
-                        .then(function (response) {
-                            if (!response.ok) {
-                                diagnosticsPanelEl.innerHTML = '<div class="secondaryText" style="color:#f44336;">Diagnostics error (HTTP ' + response.status + '). Plugin may still be initializing.</div>';
+                        .then(function (r) {
+                            if (!r.ok) {
+                                diagnosticsPanelEl.innerHTML = '<div class="secondaryText jf-text-err">Diagnostics error (HTTP ' + r.status + '). Plugin may still be initializing.</div>';
                                 return null;
                             }
-                            return response.json();
+                            return r.json();
                         })
                         .then(function (data) {
-                            if (data) {
-                                renderDiagnostics(data);
-                            } else {
-                                diagnosticsPanelEl.innerHTML = '<div class="secondaryText" style="color:#f9a825;">Diagnostics not yet available. Try refreshing in a moment.</div>';
-                            }
+                            if (data) renderDiagnostics(data);
+                            else diagnosticsPanelEl.innerHTML = '<div class="secondaryText jf-text-warn">Diagnostics not yet available. Try refreshing in a moment.</div>';
                         })
                         .catch(function (err) {
                             console.warn('[Announcements] Diagnostics load error:', err);
-                            diagnosticsPanelEl.innerHTML = '<div class="secondaryText" style="color:#f44336;">Failed to load diagnostics.</div>';
+                            diagnosticsPanelEl.innerHTML = '<div class="secondaryText jf-text-err">Failed to load diagnostics.</div>';
                         });
                 }, 1000);
             }
 
             function loadPathConfig() {
                 fetch(apiUrl(apiBase + '/Admin/PathConfig'), { headers: authHeaders() })
-                    .then(function (response) {
-                        if (!response.ok) {
-                            console.warn('[Announcements] Failed to load path config');
-                            return null;
-                        }
-                        return response.json();
-                    })
+                    .then(function (r) { if (!r.ok) { console.warn('[Announcements] Failed to load path config'); return null; } return r.json(); })
                     .then(function (config) {
-                        if (!config) {
-                            return;
-                        }
+                        if (!config) return;
                         customWebPathEl.value = config.customWebPath || '';
                         customIndexPathEl.value = config.customIndexPath || '';
                         enablePathLoggingEl.checked = !!config.enablePathLogging;
                     })
-                    .catch(function (err) {
-                        console.warn('[Announcements] Error loading path config:', err);
-                    });
+                    .catch(function (err) { console.warn('[Announcements] Error loading path config:', err); });
             }
 
             function savePathConfig() {
@@ -784,147 +1374,79 @@
                     customIndexPath: customIndexPathEl.value.trim() || null,
                     enablePathLogging: !!enablePathLoggingEl.checked
                 };
-
                 Dashboard.showLoadingMsg();
                 fetch(apiUrl(apiBase + '/Admin/PathConfig'), {
-                    method: 'POST',
-                    headers: authHeaders({ 'Content-Type': 'application/json' }),
-                    body: JSON.stringify(payload)
+                    method: 'POST', headers: authHeaders({ 'Content-Type': 'application/json' }), body: JSON.stringify(payload)
                 })
-                    .then(function (response) {
+                    .then(function (r) {
                         Dashboard.hideLoadingMsg();
-                        if (!response.ok) {
-                            return response.text().then(function (body) {
-                                showSettingsMessage('Save failed (HTTP ' + response.status + ')' + (body ? ': ' + body.slice(0, 200) : '') + '.', true);
-                            });
-                        }
-
+                        if (!r.ok) { return r.text().then(function (body) { showSettingsMessage('Save failed (HTTP ' + r.status + ')' + (body ? ': ' + body.slice(0, 200) : '') + '.', true); }); }
                         showSettingsMessage('Settings saved. Restart Jellyfin to refresh startup diagnostics.');
-                        loadPathConfig();
-                        loadDiagnostics();
+                        loadPathConfig(); loadDiagnostics();
                     })
-                    .catch(function (err) {
-                        Dashboard.hideLoadingMsg();
-                        showSettingsMessage('Save failed: ' + (err && err.message ? err.message : 'network error'), true);
-                    });
+                    .catch(function (err) { Dashboard.hideLoadingMsg(); showSettingsMessage('Save failed: ' + (err && err.message ? err.message : 'network error'), true); });
             }
 
+            /* ── Event wiring ────────────────────────────────────────── */
             page.addEventListener('pageshow', function () {
                 resetForm(false);
                 loadAnnouncements();
+                loadUserPickerData();
                 setActiveTab('announcements');
             });
 
-            tabAnnouncementsBtn.addEventListener('click', function (e) {
-                e.preventDefault();
-                setActiveTab('announcements');
-            });
+            tabAnnouncementsBtn.addEventListener('click', function (e) { e.preventDefault(); setActiveTab('announcements'); });
+            tabSettingsBtn.addEventListener('click', function (e) { e.preventDefault(); setActiveTab('settings'); });
+            cancelEditBtn.addEventListener('click', function () { resetForm(true); });
+            allowDismissEl.addEventListener('change', function () { syncDismissUi(); });
+            saveSettingsBtn.addEventListener('click', function (e) { e.preventDefault(); savePathConfig(); });
+            refreshDiagnosticsBtn.addEventListener('click', function (e) { e.preventDefault(); loadDiagnostics(); });
+            refreshUsersPickerBtn.addEventListener('click', function (e) { e.preventDefault(); loadUserPickerData(); });
 
-            tabSettingsBtn.addEventListener('click', function (e) {
-                e.preventDefault();
-                setActiveTab('settings');
-            });
-
-            cancelEditBtn.addEventListener('click', function () {
-                resetForm(true);
-            });
-
-            allowDismissEl.addEventListener('change', function () {
-                syncDismissUi();
-            });
-
-            saveSettingsBtn.addEventListener('click', function (e) {
-                e.preventDefault();
-                savePathConfig();
-            });
-
-            refreshDiagnosticsBtn.addEventListener('click', function (e) {
-                e.preventDefault();
-                loadDiagnostics();
-            });
+            includeUserIdsEl.addEventListener('input', function () { renderUserPickers(); });
+            excludeUserIdsEl.addEventListener('input', function () { renderUserPickers(); });
 
             tagsInputEl.addEventListener('keydown', function (e) {
-                if (e.key === 'Enter' || e.key === ',') {
-                    e.preventDefault();
-                    addTag(tagsInputEl.value);
-                    tagsInputEl.value = '';
-                } else if (e.key === 'Backspace' && !tagsInputEl.value && formTags.length) {
-                    formTags.pop();
-                    renderTagEditor();
-                }
+                if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); addTag(tagsInputEl.value); tagsInputEl.value = ''; }
+                else if (e.key === 'Backspace' && !tagsInputEl.value && formTags.length) { formTags.pop(); renderTagEditor(); }
             });
+            tagsInputEl.addEventListener('blur', function () { if (tagsInputEl.value.trim()) { addTag(tagsInputEl.value); tagsInputEl.value = ''; } });
 
-            tagsInputEl.addEventListener('blur', function () {
-                if (tagsInputEl.value.trim()) {
-                    addTag(tagsInputEl.value);
-                    tagsInputEl.value = '';
-                }
-            });
-
-            searchTextEl.addEventListener('input', function () {
-                renderList(allItems);
-            });
-
-            statusFilterEl.addEventListener('change', function () {
-                renderList(allItems);
-            });
-
-            tagFilterEl.addEventListener('change', function () {
-                renderList(allItems);
-            });
-
-            showArchivedChk.addEventListener('change', function () {
-                renderList(allItems);
-            });
+            searchTextEl.addEventListener('input', function () { renderList(allItems); });
+            statusFilterEl.addEventListener('change', function () { renderList(allItems); });
+            tagFilterEl.addEventListener('change', function () { renderList(allItems); });
+            showArchivedChk.addEventListener('change', function () { renderList(allItems); });
 
             form.addEventListener('submit', function (e) {
                 e.preventDefault();
-
                 var payload = {
-                    title: titleEl.value.trim(),
-                    message: messageEl.value.trim(),
-                    level: levelEl.value,
+                    title: titleEl.value.trim(), message: messageEl.value.trim(), level: levelEl.value,
                     startsAt: fromLocalInput(startsAtEl.value) || new Date().toISOString(),
                     endsAt: fromLocalInput(endsAtEl.value),
-                    showOnLoginPage: !!showOnLoginEl.checked,
-                    allowDismiss: !!allowDismissEl.checked,
-                    dismissMode: dismissModeEl.value || 'permanent',
-                    tags: formTags.slice(),
+                    showOnLoginPage: !!showOnLoginEl.checked, allowDismiss: !!allowDismissEl.checked,
+                    dismissMode: dismissModeEl.value || 'permanent', tags: formTags.slice(),
+                    audience: audienceEl.value || 'all',
+                    includeDeviceTypes: selectedDeviceTypes(), excludeDeviceTypes: selectedExcludedDeviceTypes(),
+                    includeUserRoles: selectedIncludeRoles(), excludeUserRoles: selectedExcludeRoles(),
+                    includeUserIds: parseCsv(includeUserIdsEl.value, false), excludeUserIds: parseCsv(excludeUserIdsEl.value, false),
+                    includeLibraryIds: [], excludeLibraryIds: [],
                     isArchived: editingMeta ? !!editingMeta.isArchived : false,
-                    isEnabled: editingMeta ? editingMeta.isEnabled !== false : true
+                    isEnabled:  editingMeta ? editingMeta.isEnabled !== false : true
                 };
-
-                if (editingId) {
-                    payload.id = editingId;
-                }
-
-                if (!payload.title || !payload.message) {
-                    showStatus('Title and message are required.', true);
-                    return false;
-                }
+                if (editingId) payload.id = editingId;
+                if (!payload.title || !payload.message) { showStatus('Title and message are required.', true); return false; }
 
                 Dashboard.showLoadingMsg();
                 fetch(apiUrl(apiBase + '/Admin'), {
-                    method: 'POST',
-                    headers: authHeaders({ 'Content-Type': 'application/json' }),
-                    body: JSON.stringify(payload)
+                    method: 'POST', headers: authHeaders({ 'Content-Type': 'application/json' }), body: JSON.stringify(payload)
                 })
-                    .then(function (response) {
+                    .then(function (r) {
                         Dashboard.hideLoadingMsg();
-                        if (!response.ok) {
-                            return response.text().then(function (body) {
-                                showStatus('Save failed (HTTP ' + response.status + ')' + (body ? ': ' + body.slice(0, 200) : '') + '.', true);
-                            });
-                        }
-
+                        if (!r.ok) { return r.text().then(function (body) { showStatus('Save failed (HTTP ' + r.status + ')' + (body ? ': ' + body.slice(0, 200) : '') + '.', true); }); }
                         showStatus(editingId ? 'Announcement updated.' : 'Announcement saved.');
-                        resetForm(true);
-                        loadAnnouncements();
+                        resetForm(true); loadAnnouncements();
                     })
-                    .catch(function (err) {
-                        Dashboard.hideLoadingMsg();
-                        showStatus('Save failed: ' + (err && err.message ? err.message : 'network error'), true);
-                    });
+                    .catch(function (err) { Dashboard.hideLoadingMsg(); showStatus('Save failed: ' + (err && err.message ? err.message : 'network error'), true); });
 
                 return false;
             });

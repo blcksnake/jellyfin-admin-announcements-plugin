@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text.Json;
 using MediaBrowser.Common.Configuration;
+using Microsoft.Extensions.Logging;
 
 namespace Jellyfin.Plugin.Announcements;
 
@@ -17,9 +18,11 @@ public class AnnouncementStore
     private List<Announcement> _items = new();
     private readonly string _path;
     private readonly Dictionary<string, HashSet<string>> _activeImpressions = new(StringComparer.Ordinal);
+    private readonly ILogger _logger;
 
-    public AnnouncementStore(IApplicationPaths appPaths)
+    public AnnouncementStore(IApplicationPaths appPaths, ILogger logger)
     {
+        _logger = logger;
         _path = Path.Combine(appPaths.DataPath, "announcements.json");
         Load();
     }
@@ -32,7 +35,11 @@ public class AnnouncementStore
             var json = File.ReadAllText(_path);
             _items = JsonSerializer.Deserialize<List<Announcement>>(json) ?? new();
         }
-        catch { _items = new(); }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "[Announcements] Failed to load announcements from {Path}. Starting with empty list.", _path);
+            _items = new();
+        }
     }
 
     private void Save()
@@ -42,7 +49,10 @@ public class AnnouncementStore
             var json = JsonSerializer.Serialize(_items, new JsonSerializerOptions { WriteIndented = true });
             File.WriteAllText(_path, json);
         }
-        catch { }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "[Announcements] Failed to save announcements to {Path}. Data may be lost.", _path);
+        }
     }
 
     private static IEnumerable<Announcement> SortForDisplay(IEnumerable<Announcement> source)
@@ -72,6 +82,15 @@ public class AnnouncementStore
             AllowDismiss = source.AllowDismiss,
             DismissMode = source.DismissMode,
             Tags = new List<string>(source.Tags),
+            Audience = source.Audience,
+            IncludeDeviceTypes = new List<string>(source.IncludeDeviceTypes),
+            ExcludeDeviceTypes = new List<string>(source.ExcludeDeviceTypes),
+            IncludeUserRoles = new List<string>(source.IncludeUserRoles),
+            ExcludeUserRoles = new List<string>(source.ExcludeUserRoles),
+            IncludeUserIds = new List<string>(source.IncludeUserIds),
+            ExcludeUserIds = new List<string>(source.ExcludeUserIds),
+            IncludeLibraryIds = new List<string>(source.IncludeLibraryIds),
+            ExcludeLibraryIds = new List<string>(source.ExcludeLibraryIds),
             IsArchived = source.IsArchived,
             IsEnabled = source.IsEnabled,
             ViewCount = source.ViewCount,
@@ -82,19 +101,24 @@ public class AnnouncementStore
         return clone;
     }
 
-    private static List<string> NormalizeTags(IEnumerable<string>? tags)
+    private static List<string> NormalizeUniqueList(IEnumerable<string>? values)
     {
-        if (tags is null)
+        if (values is null)
         {
             return new List<string>();
         }
 
-        return tags
-            .Select(static tag => (tag ?? string.Empty).Trim())
-            .Where(static tag => !string.IsNullOrWhiteSpace(tag))
+        return values
+            .Select(static value => (value ?? string.Empty).Trim())
+            .Where(static value => !string.IsNullOrWhiteSpace(value))
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList();
     }
+
+    private static List<string> NormalizeLowerList(IEnumerable<string>? values)
+        => NormalizeUniqueList(values)
+            .Select(static value => value.ToLowerInvariant())
+            .ToList();
 
     public IReadOnlyList<Announcement> GetActive()
     {
@@ -111,7 +135,15 @@ public class AnnouncementStore
     {
         lock (_sync)
         {
-            a.Tags = NormalizeTags(a.Tags);
+            a.Tags = NormalizeUniqueList(a.Tags);
+            a.IncludeDeviceTypes = NormalizeLowerList(a.IncludeDeviceTypes);
+            a.ExcludeDeviceTypes = NormalizeLowerList(a.ExcludeDeviceTypes);
+            a.IncludeUserRoles = NormalizeLowerList(a.IncludeUserRoles);
+            a.ExcludeUserRoles = NormalizeLowerList(a.ExcludeUserRoles);
+            a.IncludeUserIds = NormalizeUniqueList(a.IncludeUserIds);
+            a.ExcludeUserIds = NormalizeUniqueList(a.ExcludeUserIds);
+            a.IncludeLibraryIds = NormalizeUniqueList(a.IncludeLibraryIds);
+            a.ExcludeLibraryIds = NormalizeUniqueList(a.ExcludeLibraryIds);
             var existing = _items.FirstOrDefault(x => x.Id == a.Id);
             if (existing is null)
             {
@@ -129,6 +161,15 @@ public class AnnouncementStore
                 existing.AllowDismiss = a.AllowDismiss;
                 existing.DismissMode = a.DismissMode;
                 existing.Tags = new List<string>(a.Tags);
+                existing.Audience = a.Audience;
+                existing.IncludeDeviceTypes = new List<string>(a.IncludeDeviceTypes);
+                existing.ExcludeDeviceTypes = new List<string>(a.ExcludeDeviceTypes);
+                existing.IncludeUserRoles = new List<string>(a.IncludeUserRoles);
+                existing.ExcludeUserRoles = new List<string>(a.ExcludeUserRoles);
+                existing.IncludeUserIds = new List<string>(a.IncludeUserIds);
+                existing.ExcludeUserIds = new List<string>(a.ExcludeUserIds);
+                existing.IncludeLibraryIds = new List<string>(a.IncludeLibraryIds);
+                existing.ExcludeLibraryIds = new List<string>(a.ExcludeLibraryIds);
                 existing.IsArchived = a.IsArchived;
                 existing.IsEnabled = a.IsEnabled;
                 // Preserve analytics counters — never overwrite from client payload.
@@ -162,6 +203,15 @@ public class AnnouncementStore
                 AllowDismiss = source.AllowDismiss,
                 DismissMode = source.DismissMode,
                 Tags = new List<string>(source.Tags),
+                Audience = source.Audience,
+                IncludeDeviceTypes = new List<string>(source.IncludeDeviceTypes),
+                ExcludeDeviceTypes = new List<string>(source.ExcludeDeviceTypes),
+                IncludeUserRoles = new List<string>(source.IncludeUserRoles),
+                ExcludeUserRoles = new List<string>(source.ExcludeUserRoles),
+                IncludeUserIds = new List<string>(source.IncludeUserIds),
+                ExcludeUserIds = new List<string>(source.ExcludeUserIds),
+                IncludeLibraryIds = new List<string>(source.IncludeLibraryIds),
+                ExcludeLibraryIds = new List<string>(source.ExcludeLibraryIds),
                 IsArchived = false,
                 IsEnabled = false,
                 ViewCount = 0,
@@ -220,10 +270,13 @@ public class AnnouncementStore
         }
     }
 
+    private const int MaxImpressionsPerAnnouncement = 10_000;
+
     /// <summary>Tracks a browser session as actively displaying an announcement.</summary>
     public void StartImpression(string id, string sessionId)
     {
-        if (string.IsNullOrWhiteSpace(id) || string.IsNullOrWhiteSpace(sessionId))
+        if (string.IsNullOrWhiteSpace(id) || string.IsNullOrWhiteSpace(sessionId) ||
+            id.Length > 64 || sessionId.Length > 128)
         {
             return;
         }
@@ -241,7 +294,8 @@ public class AnnouncementStore
                 _activeImpressions[id] = sessions;
             }
 
-            sessions.Add(sessionId);
+            if (sessions.Count < MaxImpressionsPerAnnouncement)
+                sessions.Add(sessionId);
         }
     }
 

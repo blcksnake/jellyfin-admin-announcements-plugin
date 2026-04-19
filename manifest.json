@@ -2,7 +2,7 @@
   "Id": "b0f1f4f0-3f5a-4a9b-9a0b-a11c0ce00001",
   "Name": "Announcements",
   "Description": "Server-wide announcements, analytics, tags, and operational diagnostics for Jellyfin",
-  "Version": "0.2.0.5",
+  "Version": "0.2.0.6",
   "TargetAbi": "10.11.0.0",
   "Owner": "BLCKSNAKE",
   "Category": "Notifications",

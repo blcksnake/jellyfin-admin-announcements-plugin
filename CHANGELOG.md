@@ -2,6 +2,28 @@
 
  All notable changes to this project will be documented in this file.
 
+## 0.2.0.6 - 2026-04-18
+
+- Added audience, device, role, and specific-user targeting for announcements.
+- Added explicit exclude-device controls and live Jellyfin user picker controls in the admin targeting editor.
+- Fixed user-targeted delivery so explicitly included users resolve correctly even when Jellyfin returns mixed GUID formats.
+- Fixed cross-user leakage when switching accounts in the same browser session by clearing rendered banners on viewer/token changes.
+- Fixed delayed post-login banner loading by invalidating stale viewer caches and re-polling immediately on auth/session changes.
+- Expanded targeting summary output in the admin list to include excluded device segments and user targeting counts.
+- Refreshed the admin page and banner visuals into a more consistent Jellyfin-friendly design system.
+- Fixed config page rendering by injecting the scoped admin stylesheet at runtime so Jellyfin reliably applies the custom layout.
+- Fixed Settings tab visibility so plugin settings and diagnostics sections display correctly when switched.
+- Fixed small utility button styling so actions like Refresh users and Refresh no longer fall back to mismatched white host styling.
+- **Security**: Added per-IP rate limiting on all anonymous analytics endpoints to prevent data poisoning and abuse.
+- **Security**: Added hard cap (10,000) on active-impression tracking per announcement to prevent memory exhaustion.
+- **Security**: Added maximum length and count validation on announcement fields (Title ≤ 200, Message ≤ 5000, Tags ≤ 50, UserIds ≤ 500, LibraryIds ≤ 100).
+- **Security**: Added `IsIndexPathSafe()` guard to prevent admin-configured paths from targeting sensitive system files during banner injection.
+- **Security**: Fixed `</body>` injection to use `LastIndexOf` instead of `Replace` to prevent duplicate script tags on malformed HTML.
+- **Security**: Replaced `Math.random()` session ID generation with `crypto.getRandomValues()` for cryptographically random session tokens.
+- **Security**: Replaced JS Injector assembly substring lookup with exact `string.Equals(..., Ordinal)` comparison to prevent name-spoofing by similarly-named assemblies.
+- **Security**: Added error logging to `AnnouncementStore` data load/save operations so disk/permission failures are visible in server logs instead of silently swallowed.
+- **Security**: Removed pinned `Microsoft.AspNetCore.Mvc.Abstractions 2.2.0` (EOL, CVE-2019-0657, CVE-2019-0980, CVE-2019-0981) — version now supplied transitively by Jellyfin.Controller.
+
 ## 0.2.0.5 - 2026-04-06
 
 - Added announcement analytics for views, dismisses, and live active impressions.

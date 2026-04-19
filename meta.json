@@ -1,6 +1,6 @@
 {
   "category": "Notifications",
-  "changelog": "Quality + visibility update for v0.2.0.5. Adds announcement analytics, tags, duplicate/archive/enable actions, operational diagnostics, and branded catalog artwork.",
+  "changelog": "v0.2.0.6: Audience/device/role/user targeting, admin UI overhaul with consistent design system, and a full security hardening pass (analytics rate limiting, impression memory cap, input length limits, safe path validation, crypto-random session IDs, EOL dependency removal).",
   "description": "Server-wide announcements and maintenance banners with analytics, tags, admin quality-of-life actions, and diagnostics for non-standard installations.",
   "guid": "b0f1f4f0-3f5a-4a9b-9a0b-a11c0ce00001",
   "imageUrl": "https://raw.githubusercontent.com/BLCKSNAKE/jellyfin-admin-announcements-plugin/main/docs/images/jellyfin-admin-announcements-plugin-logo.png",
@@ -8,6 +8,6 @@
   "overview": "Display admin announcements with analytics, tags, and diagnostics in the Jellyfin web UI.",
   "owner": "BLCKSNAKE",
   "targetAbi": "10.11.0.0",
-  "timestamp": "2026-04-06T00:00:00Z",
-  "version": "0.2.0.5"
+  "timestamp": "2026-04-18T00:00:00Z",
+  "version": "0.2.0.6"
 }

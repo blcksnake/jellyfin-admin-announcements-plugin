@@ -43,7 +43,7 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
     {
         _logger = logger;
         Instance = this;
-        Store = new AnnouncementStore(applicationPaths);
+        Store = new AnnouncementStore(applicationPaths, logger);
         _runtimeSettingsPath = Path.Combine(applicationPaths.DataPath, "announcements.settings.json");
         _runtimeSettings = LoadRuntimeSettings();
         var jsInjectorRegistered = RegisterWithJsInjector();
@@ -83,7 +83,7 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
             InjectionMode = _injectionMode ?? "None",
             ResolvedIndexPath = _resolvedIndexPath,
             StartupTime = _startupTime,
-            PluginVersion = Version?.ToString() ?? "0.2.0.5"
+            PluginVersion = Version?.ToString() ?? "0.2.0.6"
         };
     }
 
@@ -222,7 +222,13 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
             try
             {
                 var full = Path.GetFullPath(indexPath);
-                
+
+                if (!IsIndexPathSafe(full))
+                {
+                    _logger.LogWarning("[Announcements] Refused to patch {Path} — path failed safety validation.", full);
+                    continue;
+                }
+
                 if (!File.Exists(full))
                 {
                     if (enableDebugLogging)
@@ -245,7 +251,10 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
                 var bak = full + ".bak";
                 if (!File.Exists(bak)) File.Copy(full, bak);
 
-                content = content.Replace("</body>", ScriptTag + "\n</body>", StringComparison.OrdinalIgnoreCase);
+                // Replace only the last </body> to avoid double-injection if the tag appears multiple times
+                var lastBodyPos = content.LastIndexOf("</body>", StringComparison.OrdinalIgnoreCase);
+                if (lastBodyPos >= 0)
+                    content = content.Substring(0, lastBodyPos) + ScriptTag + "\n" + content.Substring(lastBodyPos);
                 File.WriteAllText(full, content, System.Text.Encoding.UTF8);
                 _resolvedIndexPath = full;
                 _logger.LogInformation("[Announcements] Patched {Path} — banners will auto-load on every page.", full);
@@ -358,13 +367,42 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
         return candidates;
     }
 
+    /// <summary>Ensures a resolved index.html path is safe to read and patch.</summary>
+    private static bool IsIndexPathSafe(string fullPath)
+    {
+        // Must target an HTML file
+        if (!fullPath.EndsWith(".html", StringComparison.OrdinalIgnoreCase) &&
+            !fullPath.EndsWith(".htm", StringComparison.OrdinalIgnoreCase))
+            return false;
+
+        // Refuse known sensitive system directories
+#pragma warning disable CA1307
+        var unsafe_prefixes = new[]
+        {
+            "/etc/", "/proc/", "/sys/", "/root/", "/dev/",
+            "C:\\Windows\\", "C:\\Users\\", "C:\\ProgramData\\"
+        };
+#pragma warning restore CA1307
+        foreach (var prefix in unsafe_prefixes)
+        {
+            if (fullPath.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+                return false;
+        }
+
+        return true;
+    }
+
     private bool RegisterWithJsInjector()
     {
         try
         {
+            // Use exact assembly name comparison (not substring) to prevent spoofing by a similarly-named assembly.
             var jsInjectorAssembly = AssemblyLoadContext.All
                 .SelectMany(ctx => ctx.Assemblies)
-                .FirstOrDefault(a => a.FullName?.Contains("Jellyfin.Plugin.JavaScriptInjector") ?? false);
+                .FirstOrDefault(a => string.Equals(
+                    a.GetName().Name,
+                    "Jellyfin.Plugin.JavaScriptInjector",
+                    StringComparison.Ordinal));
 
             if (jsInjectorAssembly is null)
             {
