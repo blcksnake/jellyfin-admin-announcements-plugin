@@ -1,7 +1,7 @@
 # patch-jellyfin-web.ps1
 # Run this once on the machine where Jellyfin is installed (as Administrator if needed).
 # It adds a single <script> tag to jellyfin-web/index.html so announcement
-# banners appear automatically on every Jellyfin page. JS Injector is not required.
+# banners appear automatically on every Jellyfin page. No other plugin is required.
 
 param(
     [switch]$Undo, # Pass -Undo to remove the patch

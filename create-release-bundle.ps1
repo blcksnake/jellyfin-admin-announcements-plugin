@@ -2,7 +2,7 @@
 # Builds publish output and creates a clean zip for GitHub/Jellyfin repository distribution.
 
 param(
-    [string]$Version = "0.2.0.6",
+    [string]$Version = "0.2.0.7",
     [switch]$SkipBuild
 )
 
@@ -29,8 +29,7 @@ New-Item -ItemType Directory -Path $bundleDir -Force | Out-Null
 
 $requiredFiles = @(
     "Jellyfin.Plugin.Announcements.dll",
-    "Jellyfin.Plugin.Announcements.deps.json",
-    "Newtonsoft.Json.dll"
+    "Jellyfin.Plugin.Announcements.deps.json"
 )
 
 foreach ($file in $requiredFiles) {

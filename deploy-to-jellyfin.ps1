@@ -13,9 +13,7 @@ $ErrorActionPreference = "Stop"
 $pluginAssembly = "Jellyfin.Plugin.Announcements.dll"
 $depsFile = "Jellyfin.Plugin.Announcements.deps.json"
 $symbolsFile = "Jellyfin.Plugin.Announcements.pdb"
-$extraRuntimeFiles = @(
-    "Newtonsoft.Json.dll"
-)
+$extraRuntimeFiles = @()
 
 $publishDir = Join-Path $PSScriptRoot "publish"
 $metaPath = Join-Path $PSScriptRoot "meta.json"

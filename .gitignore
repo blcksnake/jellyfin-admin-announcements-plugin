@@ -8,3 +8,10 @@ release/
 *.log
 .vscode/
 docker/jellyfin-test/
+node_modules/
+playwright-report/
+test-results/
+# Local release-validation tooling; intentionally not distributed with the plugin.
+package.json
+package-lock.json
+tests/

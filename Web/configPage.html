@@ -810,7 +810,14 @@
             function apiUrl(path) { return ApiClient.getUrl(path); }
 
             function authHeaders(extra) {
-                var headers = { 'X-Emby-Token': ApiClient.accessToken() };
+                var token = ApiClient.accessToken ? String(ApiClient.accessToken() || '') : '';
+                var headers = {};
+                if (token) {
+                    // Jellyfin 12 disables legacy token-only headers by default. The standard
+                    // MediaBrowser authorization header works on both Jellyfin 12 and 10.11.
+                    headers.Authorization = 'MediaBrowser Token="' + encodeURIComponent(token) + '"';
+                    headers['X-Emby-Token'] = token;
+                }
                 if (extra) { Object.keys(extra).forEach(function (k) { headers[k] = extra[k]; }); }
                 return headers;
             }
@@ -975,17 +982,19 @@
                         .sort(function (a, b) { return a.name.localeCompare(b.name); });
                     renderUserPickers();
                 }
-                fetch(apiUrl('Users/Query'), { headers: authHeaders() })
+                // /Users/Query returns HTTP 400 on Jellyfin 12 without additional query
+                // parameters. /Users is the stable admin list endpoint on both supported APIs.
+                fetch(apiUrl('Users'), { headers: authHeaders() })
                     .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
                     .then(function (p) {
-                        var rows = Array.isArray(p && p.Items) ? p.Items : [];
+                        var rows = Array.isArray(p) ? p : (Array.isArray(p && p.Items) ? p.Items : []);
                         if (!rows.length) throw new Error('empty');
                         setUsers(rows);
                     })
                     .catch(function () {
-                        fetch(apiUrl('Users'), { headers: authHeaders() })
+                        fetch(apiUrl('Users/Query?StartIndex=0&Limit=500'), { headers: authHeaders() })
                             .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
-                            .then(function (users) { setUsers(Array.isArray(users) ? users : []); })
+                            .then(function (p) { setUsers(Array.isArray(p && p.Items) ? p.Items : []); })
                             .catch(function () { availableUsers = []; renderUserPickers(); });
                     });
             }

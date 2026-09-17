@@ -27,7 +27,6 @@ Required plugin files:
 
 - Jellyfin.Plugin.Announcements.dll
 - Jellyfin.Plugin.Announcements.deps.json
-- Newtonsoft.Json.dll
 - meta.json
 
 ## 4) GitHub Release

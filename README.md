@@ -6,9 +6,9 @@ Server-wide announcements and maintenance banners for Jellyfin.
 
 ## Status
 
-- Version: 0.2.0.6
-- Target Jellyfin ABI: 10.11.0.0
-- Framework: .NET 9
+- Version: 0.2.0.7
+- Target Jellyfin ABI: 12.0.0.0
+- Framework: .NET 10
 
 ## Features
 
@@ -62,8 +62,8 @@ No manual file copy and no local build is required for end users.
 
 No additional plugin is required.
 
-The Announcements plugin injects its banner script through JavaScript Injector when that plugin is available, and otherwise falls back to patching `jellyfin-web/index.html` at startup.
-For Linux and container deployments, index patch fallback requires write permission to the web path.
+Announcements has no third-party plugin dependency. It adds one `Announcements/banner.js` loader tag to `jellyfin-web/index.html` at startup.
+For Linux and container deployments, the Jellyfin runtime needs write permission to that web path.
 
 ## Maintainers
 
@@ -71,9 +71,9 @@ For release packaging and repository publishing workflow, see DISTRIBUTION.md.
 
 ## Compatibility Notes
 
-- Plugin is tested with Jellyfin 10.11.8.
+- Version 0.2.0.7 is tested with Jellyfin 12.1. Version 0.2.0.6 remains available for Jellyfin 10.11.
 - Auto web injection now supports Windows, Linux, macOS, and common container layouts.
-- Diagnostics in the admin page show whether the plugin is running through JS Injector or direct index patching.
+- Diagnostics in the admin page show the resolved index path and whether Announcements patched it successfully.
 - User-targeted announcements now re-evaluate automatically on login, logout, and same-tab account switching.
 - Optional overrides for non-standard installs:
 	- `JELLYFIN_WEB_INDEX_PATH` (full path to `index.html`)

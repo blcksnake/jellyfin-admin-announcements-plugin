@@ -1,6 +1,20 @@
 ﻿[{
+    "guid":  "b0f1f4f0-3f5a-4a9b-9a0b-a11c0ce00001",
+    "name":  "Announcements",
+    "overview":  "Display admin announcements with analytics, tags, and diagnostics in the Jellyfin web UI.",
+    "description":  "Server-wide announcements and maintenance banners with analytics, tags, admin quality-of-life actions, and diagnostics for non-standard installations.",
     "owner":  "BLCKSNAKE",
+    "category":  "Notifications",
+    "imageUrl":  "https://raw.githubusercontent.com/BLCKSNAKE/jellyfin-admin-announcements-plugin/main/docs/images/jellyfin-admin-announcements-plugin-logo.png",
     "versions":  [
+                     {
+                         "version":  "0.2.0.7",
+                         "changelog":  "v0.2.0.7: Jellyfin 12 support, reliable banner display after sign-in, fixed admin authentication, improved analytics, and a clearer announcement layout.",
+                         "targetAbi":  "12.0.0.0",
+                         "sourceUrl":  "https://github.com/blcksnake/jellyfin-admin-announcements-plugin/releases/download/v0.2.0.7/Announcements_0.2.0.7.zip",
+                         "checksum":  "79c572eb114b19a46149f68e56041956",
+                         "timestamp":  "2026-09-17T21:52:18Z"
+                     },
                      {
                          "changelog":  "v0.2.0.6: Audience/device/role/user targeting, admin UI overhaul with consistent design system, and a full security hardening pass (analytics rate limiting, impression memory cap, input length limits, safe path validation, crypto-random session IDs, EOL dependency removal).",
                          "version":  "0.2.0.6",
@@ -9,11 +23,5 @@
                          "targetAbi":  "10.11.0.0",
                          "sourceUrl":  "https://github.com/blcksnake/jellyfin-admin-announcements-plugin/releases/download/v0.2.0.6/Announcements_0.2.0.6.zip"
                      }
-                 ],
-    "overview":  "Display admin announcements with analytics, tags, and diagnostics in the Jellyfin web UI.",
-    "category":  "Notifications",
-    "guid":  "b0f1f4f0-3f5a-4a9b-9a0b-a11c0ce00001",
-    "name":  "Announcements",
-    "description":  "Server-wide announcements and maintenance banners with analytics, tags, admin quality-of-life actions, and diagnostics for non-standard installations.",
-    "imageUrl":  "https://raw.githubusercontent.com/BLCKSNAKE/jellyfin-admin-announcements-plugin/main/docs/images/jellyfin-admin-announcements-plugin-logo.png"
+                 ]
 }]

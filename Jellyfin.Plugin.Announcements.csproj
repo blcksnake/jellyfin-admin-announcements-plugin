@@ -1,11 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <LangVersion>latest</LangVersion>
-    <Version>0.2.0.6</Version>
-    <AssemblyVersion>0.2.0.6</AssemblyVersion>
-    <FileVersion>0.2.0.6</FileVersion>
+    <Version>0.2.0.7</Version>
+    <AssemblyVersion>0.2.0.7</AssemblyVersion>
+    <FileVersion>0.2.0.7</FileVersion>
     <Authors>BLCKSNAKE</Authors>
     <Company>BLCKSNAKE</Company>
     <AssemblyName>Jellyfin.Plugin.Announcements</AssemblyName>
@@ -16,11 +16,12 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Jellyfin.Controller" Version="10.11.6" />
-    <PackageReference Include="Jellyfin.Model" Version="10.11.6" />
-    <!-- Microsoft.AspNetCore.Mvc.Abstractions is supplied transitively by Jellyfin.Controller;
-         pinning the EOL 2.2.0 version is removed to avoid version conflicts and CVE exposure. -->
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="Jellyfin.Controller" Version="12.0.0">
+      <ExcludeAssets>runtime</ExcludeAssets>
+    </PackageReference>
+    <PackageReference Include="Jellyfin.Model" Version="12.0.0">
+      <ExcludeAssets>runtime</ExcludeAssets>
+    </PackageReference>
   </ItemGroup>
 
   <!-- Embed the admin web page inside the DLL -->

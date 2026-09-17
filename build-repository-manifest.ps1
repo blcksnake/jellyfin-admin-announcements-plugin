@@ -2,8 +2,8 @@ param(
     [Parameter(Mandatory = $true)]
     [string]$SourceUrl,
 
-    [string]$Version = "0.2.0.6",
-    [string]$ZipPath = ".\release\Announcements_0.2.0.6.zip",
+    [string]$Version = "0.2.0.7",
+    [string]$ZipPath = ".\release\Announcements_0.2.0.7.zip",
     [string]$OutputPath = ".\repository\manifest.json"
 )
 
@@ -26,7 +26,30 @@ if (-not [string]::IsNullOrWhiteSpace($outputDir) -and -not (Test-Path $outputDi
     New-Item -ItemType Directory -Path $outputDir -Force | Out-Null
 }
 
-$pluginEntry = @{
+$newVersion = [ordered]@{
+    version = $Version
+    changelog = $meta.changelog
+    targetAbi = $meta.targetAbi
+    sourceUrl = $SourceUrl
+    checksum = $checksum
+    timestamp = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
+}
+
+# Keep older ABI builds available. Jellyfin uses targetAbi to select the newest
+# compatible release, so replacing the whole version list would strand 10.11 users.
+$existingVersions = @()
+if (Test-Path $OutputPath) {
+    $existingManifest = Get-Content $OutputPath -Raw | ConvertFrom-Json
+    $existingPlugin = @($existingManifest) |
+        Where-Object { $_.guid -eq $meta.guid } |
+        Select-Object -First 1
+    if ($null -ne $existingPlugin) {
+        $existingVersions = @($existingPlugin.versions) |
+            Where-Object { $_.version -ne $Version }
+    }
+}
+
+$pluginEntry = [ordered]@{
     guid = $meta.guid
     name = $meta.name
     overview = $meta.overview
@@ -34,16 +57,7 @@ $pluginEntry = @{
     owner = "BLCKSNAKE"
     category = $meta.category
     imageUrl = $meta.imageUrl
-    versions = @(
-        @{
-            version = $Version
-            changelog = $meta.changelog
-            targetAbi = $meta.targetAbi
-            sourceUrl = $SourceUrl
-            checksum = $checksum
-            timestamp = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
-        }
-    )
+    versions = @($newVersion) + @($existingVersions)
 }
 
 # Jellyfin repository manifests must be a top-level JSON array.

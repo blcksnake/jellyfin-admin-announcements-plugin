@@ -3,17 +3,13 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
-using System.Reflection;
-using System.Runtime.Loader;
 using System.Text.Json;
-using System.Threading.Tasks;
 using Jellyfin.Plugin.Announcements.Configuration;
 using MediaBrowser.Common.Configuration;
 using MediaBrowser.Common.Plugins;
 using MediaBrowser.Model.Plugins;
 using MediaBrowser.Model.Serialization;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json.Linq;
 
 namespace Jellyfin.Plugin.Announcements;
 
@@ -25,9 +21,6 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
     private readonly ILogger<Plugin> _logger;
     private readonly string _runtimeSettingsPath;
     private RuntimeSettings _runtimeSettings;
-    private int _retryCount;
-    private const int MaxRetries = 3;
-
     // Diagnostics
     private string _injectionMode = "None";
     private string? _resolvedIndexPath;
@@ -46,24 +39,16 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
         Store = new AnnouncementStore(applicationPaths, logger);
         _runtimeSettingsPath = Path.Combine(applicationPaths.DataPath, "announcements.settings.json");
         _runtimeSettings = LoadRuntimeSettings();
-        var jsInjectorRegistered = RegisterWithJsInjector();
-        if (jsInjectorRegistered)
+        var indexPatched = PatchJellyfinWebIndex();
+        if (indexPatched)
         {
-            _injectionMode = "JsInjector";
+            _injectionMode = "IndexPatch";
         }
         else
         {
-            var indexPatched = PatchJellyfinWebIndex();
-            if (indexPatched)
-            {
-                _injectionMode = "IndexPatch";
-            }
-            else
-            {
-                _injectionMode = "None";
-                _logger.LogError(
-                    "[Announcements] Banner script was not injected. Install/enable JavaScript Injector, or set JELLYFIN_WEB_INDEX_PATH/JELLYFIN_WEB_DIR to a writable jellyfin-web index path.");
-            }
+            _injectionMode = "None";
+            _logger.LogError(
+                "[Announcements] Banner script was not injected. Set JELLYFIN_WEB_INDEX_PATH/JELLYFIN_WEB_DIR, or configure a writable jellyfin-web index.html path in Announcements settings.");
         }
     }
 
@@ -83,7 +68,7 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
             InjectionMode = _injectionMode ?? "None",
             ResolvedIndexPath = _resolvedIndexPath,
             StartupTime = _startupTime,
-            PluginVersion = Version?.ToString() ?? "0.2.0.6"
+            PluginVersion = Version?.ToString() ?? "0.2.0.7"
         };
     }
 
@@ -267,7 +252,7 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
         }
 
         _logger.LogWarning(
-            "[Announcements] jellyfin-web/index.html not found. To fix: 1) Install JS Injector plugin, 2) Set env vars JELLYFIN_WEB_INDEX_PATH or JELLYFIN_WEB_DIR, 3) Use plugin config settings for custom paths, or 4) Enable path logging (EnablePathLogging=true in plugin config) to debug.");
+            "[Announcements] jellyfin-web/index.html not found. Set JELLYFIN_WEB_INDEX_PATH or JELLYFIN_WEB_DIR, use the custom paths in Announcements settings, or enable path logging (EnablePathLogging=true) to debug.");
         return false;
     }
 
@@ -392,82 +377,4 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
         return true;
     }
 
-    private bool RegisterWithJsInjector()
-    {
-        try
-        {
-            // Use exact assembly name comparison (not substring) to prevent spoofing by a similarly-named assembly.
-            var jsInjectorAssembly = AssemblyLoadContext.All
-                .SelectMany(ctx => ctx.Assemblies)
-                .FirstOrDefault(a => string.Equals(
-                    a.GetName().Name,
-                    "Jellyfin.Plugin.JavaScriptInjector",
-                    StringComparison.Ordinal));
-
-            if (jsInjectorAssembly is null)
-            {
-                _logger.LogInformation("[Announcements] JS Injector plugin not found; banner auto-injection disabled.");
-                return false;
-            }
-
-            var pluginInterfaceType = jsInjectorAssembly.GetType("Jellyfin.Plugin.JavaScriptInjector.PluginInterface");
-            if (pluginInterfaceType is null)
-            {
-                _logger.LogWarning("[Announcements] JS Injector PluginInterface type not found.");
-                return false;
-            }
-
-            var resourceName = "Jellyfin.Plugin.Announcements.Web.announcement.js";
-            string scriptContent;
-            using (var stream = GetType().Assembly.GetManifestResourceStream(resourceName))
-            {
-                if (stream is null)
-                {
-                    _logger.LogWarning("[Announcements] Embedded resource '{Resource}' not found.", resourceName);
-                    return false;
-                }
-
-                using var reader = new StreamReader(stream);
-                scriptContent = reader.ReadToEnd();
-            }
-
-            var payload = new JObject
-            {
-                { "id", $"{Id}-banner-script" },
-                { "name", "Announcements Banner Script" },
-                { "script", scriptContent },
-                { "enabled", true },
-                { "requiresAuthentication", true },
-                { "pluginId", Id.ToString() },
-                { "pluginName", Name },
-                { "pluginVersion", Version?.ToString() ?? "1.0.0" }
-            };
-
-            pluginInterfaceType.GetMethod("RegisterScript")?.Invoke(null, new object?[] { payload });
-            _logger.LogInformation("[Announcements] Banner script registered with JS Injector.");
-            return true;
-        }
-        catch (TargetInvocationException ex) when (ex.InnerException is InvalidOperationException)
-        {
-            if (_retryCount >= MaxRetries)
-            {
-                _logger.LogWarning("[Announcements] JS Injector not ready after {MaxRetries} retries.", MaxRetries);
-                return false;
-            }
-
-            _retryCount++;
-            _logger.LogInformation("[Announcements] JS Injector not ready; retrying in 5s ({Attempt}/{MaxRetries}).", _retryCount, MaxRetries);
-            _ = Task.Run(async () =>
-            {
-                await Task.Delay(TimeSpan.FromSeconds(5)).ConfigureAwait(false);
-                RegisterWithJsInjector();
-            });
-            return true;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "[Announcements] Failed to register script with JS Injector.");
-            return false;
-        }
-    }
 }

@@ -103,10 +103,12 @@ public class AnnouncementController : ControllerBase
     private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, long> _analyticsTicks = new();
     private const int AnalyticsMinIntervalMs = 500;
 
-    private bool AllowAnalytics(string id)
+    private bool AllowAnalytics(string id, string eventName)
     {
         var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
-        var key = id + "|" + ip;
+        // A banner records a view and starts an impression back-to-back. Throttling only
+        // by announcement and IP incorrectly rejects the second, legitimate event.
+        var key = id + "|" + eventName + "|" + ip;
         var now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
         var last = _analyticsTicks.GetOrAdd(key, 0L);
         if (now - last < AnalyticsMinIntervalMs) return false;
@@ -287,7 +289,7 @@ public class AnnouncementController : ControllerBase
         return Ok(new DisplaySettingsDto { ShowOnLoginPage = Plugin.Instance.ShowOnLoginPage });
     }
 
-    /// <summary>Serves the injected banner script for JS Injector.</summary>
+    /// <summary>Serves the banner script loaded by the Announcements index patch.</summary>
     [HttpGet("banner.js")]
     [AllowAnonymous]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -387,7 +389,7 @@ public class AnnouncementController : ControllerBase
     public IActionResult RecordView(string id)
     {
         if (string.IsNullOrWhiteSpace(id) || id.Length > 64) return NoContent();
-        if (!AllowAnalytics(id)) return StatusCode(StatusCodes.Status429TooManyRequests);
+        if (!AllowAnalytics(id, "view")) return StatusCode(StatusCodes.Status429TooManyRequests);
         _store.RecordView(id);
         return NoContent();
     }
@@ -400,7 +402,7 @@ public class AnnouncementController : ControllerBase
     public IActionResult RecordDismiss(string id)
     {
         if (string.IsNullOrWhiteSpace(id) || id.Length > 64) return NoContent();
-        if (!AllowAnalytics(id)) return StatusCode(StatusCodes.Status429TooManyRequests);
+        if (!AllowAnalytics(id, "dismiss")) return StatusCode(StatusCodes.Status429TooManyRequests);
         _store.RecordDismiss(id);
         return NoContent();
     }
@@ -414,7 +416,7 @@ public class AnnouncementController : ControllerBase
     {
         if (string.IsNullOrWhiteSpace(id) || id.Length > 64) return NoContent();
         if (string.IsNullOrWhiteSpace(dto?.SessionId) || dto.SessionId.Length > 128) return NoContent();
-        if (!AllowAnalytics(id)) return StatusCode(StatusCodes.Status429TooManyRequests);
+        if (!AllowAnalytics(id, "impression-start")) return StatusCode(StatusCodes.Status429TooManyRequests);
         _store.StartImpression(id, dto.SessionId);
         return NoContent();
     }
@@ -428,7 +430,7 @@ public class AnnouncementController : ControllerBase
     {
         if (string.IsNullOrWhiteSpace(id) || id.Length > 64) return NoContent();
         if (string.IsNullOrWhiteSpace(dto?.SessionId) || dto.SessionId.Length > 128) return NoContent();
-        if (!AllowAnalytics(id)) return StatusCode(StatusCodes.Status429TooManyRequests);
+        if (!AllowAnalytics(id, "impression-end")) return StatusCode(StatusCodes.Status429TooManyRequests);
         _store.EndImpression(id, dto.SessionId);
         return NoContent();
     }

@@ -2,6 +2,15 @@
 
  All notable changes to this project will be documented in this file.
 
+## 0.2.0.7 - 2026-09-17
+
+- Added Jellyfin 12 support by moving the plugin to .NET 10 and the Jellyfin 12 API packages.
+- Fixed HTTP 401 errors on the admin settings page and user targeting lookups under Jellyfin 12.
+- Fixed initial banner rendering after signing in through Jellyfin Web.
+- Fixed active-impression analytics being rate-limited immediately after the corresponding view event.
+- Improved banner readability with a wider layout, more breathing room, clearer type hierarchy, preserved message line breaks, and a separated schedule row.
+- Validated the release against Jellyfin 12.1 in Docker.
+
 ## 0.2.0.6 - 2026-04-18
 
 - Added audience, device, role, and specific-user targeting for announcements.

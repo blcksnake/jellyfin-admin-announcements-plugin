@@ -244,9 +244,7 @@
             const url = window.ApiClient.getUrl(path);
             const response = await fetch(url, {
                 credentials: 'include',
-                headers: {
-                    'X-Emby-Token': typeof window.ApiClient.accessToken === 'function' ? window.ApiClient.accessToken() : ''
-                }
+                headers: getApiAuthHeaders()
             });
 
             if (!response.ok) {
@@ -296,9 +294,7 @@
             const url = window.ApiClient.getUrl('Users/Me');
             const response = await fetch(url, {
                 credentials: 'include',
-                headers: {
-                    'X-Emby-Token': typeof window.ApiClient.accessToken === 'function' ? window.ApiClient.accessToken() : ''
-                }
+                headers: getApiAuthHeaders()
             });
 
             if (!response.ok) {
@@ -440,7 +436,7 @@
         const close = document.createElement('button');
         close.className = 'jf-announcement-close';
         close.setAttribute('aria-label', 'Dismiss announcement');
-        close.textContent = 'x';
+        close.textContent = '\u00d7';
         if (a.allowDismiss === false) {
             close.style.display = 'none';
         }
@@ -468,7 +464,7 @@
         const meta = document.createElement('div');
         meta.className = 'jf-announcement-meta';
         meta.textContent = startsAt
-            ? ('Starts ' + startsAt + (endsAt ? ' | Ends ' + endsAt : ' | No expiry'))
+            ? ('Starts ' + startsAt + (endsAt ? ' • Ends ' + endsAt : ' • No expiry'))
             : (endsAt ? ('Ends ' + endsAt) : 'Active now');
 
         card.appendChild(header);
@@ -536,6 +532,18 @@
             return '';
         }
         return '';
+    }
+
+    function getApiAuthHeaders(extra) {
+        const token = getAccessToken();
+        const headers = Object.assign({}, extra || {});
+        if (token) {
+            // Jellyfin 12 requires the standard authorization header unless legacy
+            // authentication is explicitly enabled. Keep X-Emby-Token for 10.11.
+            headers.Authorization = 'MediaBrowser Token="' + encodeURIComponent(token) + '"';
+            headers['X-Emby-Token'] = token;
+        }
+        return headers;
     }
 
     function getViewerFingerprint(context) {
@@ -653,11 +661,15 @@
         }, Math.max(0, Number(delayMs) || 0));
     }
 
-    async function init() {
+    function init() {
         ensureCssLoaded();
-        await pollAnnouncements();
-        setInterval(pollAnnouncements, POLL_INTERVAL);
+        // Start observing authentication before the initial request. On Jellyfin Web,
+        // the script loads on the anonymous login route and the SPA then hydrates the
+        // user session without a page load. Do not let an anonymous request delay the
+        // watcher that handles that transition.
         startAuthWatcher();
+        pollAnnouncements();
+        setInterval(pollAnnouncements, POLL_INTERVAL);
 
         // Startup burst catches post-login hydration without requiring refresh.
         schedulePoll(250);
