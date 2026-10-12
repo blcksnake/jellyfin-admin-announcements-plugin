@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Net.Mime;
 using System.Reflection;
+using System.Security.Claims;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
@@ -154,12 +155,86 @@ public class AnnouncementController : ControllerBase
             ?? throw new InvalidOperationException("Announcements plugin is not loaded.");
     }
 
-    /// <summary>Returns only active announcements (for users/client apps).</summary>
+    private static string NormalizeId(string? value)
+        => (value ?? string.Empty).Trim().Replace("-", string.Empty).ToLowerInvariant();
+
+    /// <summary>
+    /// Server-side part of the targeting rules in banner.js (audience, specific users, admin/user roles),
+    /// so an announcement is only sent to callers it is meant for. Kid status, device type and libraries
+    /// are not known here and are still checked by banner.js.
+    /// </summary>
+    private static bool IsVisibleTo(Announcement a, string? userId, bool isAdmin)
+    {
+        var isAuthenticated = userId is not null;
+        var explicitlyIncluded = isAuthenticated && a.IncludeUserIds.Any(id => NormalizeId(id) == userId);
+
+        if (isAuthenticated && a.ExcludeUserIds.Any(id => NormalizeId(id) == userId))
+            return false;
+
+        if (a.IncludeUserIds.Count > 0 && !explicitlyIncluded)
+            return false;
+
+        var audience = (a.Audience ?? "all").ToLowerInvariant();
+        if (audience == "authenticated" && !isAuthenticated) return false;
+        if (audience == "unauthenticated" && isAuthenticated) return false;
+        if (audience == "admins" && !isAdmin) return false;
+        if (audience == "nonadmins" && (!isAuthenticated || isAdmin)) return false;
+        if (audience == "kids" && !isAuthenticated) return false;
+
+        if (!explicitlyIncluded)
+        {
+            // Same roles as banner.js: "guest" when signed out, otherwise "user" plus "admin".
+            var roles = !isAuthenticated
+                ? new[] { "guest" }
+                : isAdmin ? new[] { "user", "admin" } : new[] { "user" };
+
+            if (a.IncludeUserRoles.Count > 0
+                && !a.IncludeUserRoles.Any(r => roles.Contains(r, System.StringComparer.OrdinalIgnoreCase))
+                && !(isAuthenticated && a.IncludeUserRoles.Contains("kid", System.StringComparer.OrdinalIgnoreCase)))
+                return false;
+
+            if (a.ExcludeUserRoles.Any(r => roles.Contains(r, System.StringComparer.OrdinalIgnoreCase)))
+                return false;
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// Returns the active announcements meant for the caller (for users/client apps).
+    /// Anonymous on purpose so the login page can show banners; when the request carries a token,
+    /// the caller's user ID and admin role are used for targeting.
+    /// </summary>
     [HttpGet]
     [AllowAnonymous]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public ActionResult<IReadOnlyList<Announcement>> GetActive()
-        => Ok(_store.GetActive());
+    {
+        string? userId = null;
+        if (Guid.TryParse(User.FindFirst("Jellyfin-UserId")?.Value, out var parsedUserId) && parsedUserId != Guid.Empty)
+            userId = parsedUserId.ToString("N");
+        var isAdmin = userId is not null && User.IsInRole("Administrator");
+
+        var visible = _store.GetActive()
+            .Where(a => IsVisibleTo(a, userId, isAdmin))
+            .ToList();
+
+        // Targeting already applied above: do not send other users' IDs to the client.
+        // Role lists are cleared for an explicitly included user, as banner.js skips them in that case.
+        foreach (var a in visible)
+        {
+            if (a.IncludeUserIds.Count > 0)
+            {
+                a.IncludeUserRoles = new List<string>();
+                a.ExcludeUserRoles = new List<string>();
+            }
+
+            a.IncludeUserIds = new List<string>();
+            a.ExcludeUserIds = new List<string>();
+        }
+
+        return Ok(visible);
+    }
 
     /// <summary>Returns all announcements including inactive (admin only).</summary>
     [HttpGet("Admin")]
