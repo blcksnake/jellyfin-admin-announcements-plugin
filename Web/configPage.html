@@ -1100,6 +1100,36 @@
                 }
             }
 
+            // The editor only offers "Everyone" and "Signed-in users only", but the API accepts more audiences.
+            // When editing such an announcement, add its audience as an extra option so saving keeps it
+            // (otherwise the select falls back to empty and the announcement is saved as "Everyone").
+            var extraAudienceLabels = {
+                unauthenticated: 'Signed-out visitors only',
+                admins: 'Administrators only',
+                nonadmins: 'Signed-in non-administrators only',
+                kids: 'Kids only',
+                nonkids: 'Everyone except kids'
+            };
+
+            function ensureAudienceOption(value) {
+                var exists = Array.prototype.some.call(audienceEl.options, function (o) { return o.value === value; });
+                if (exists) return;
+                var opt = document.createElement('option');
+                opt.value = value;
+                opt.textContent = extraAudienceLabels[value] || value;
+                opt.setAttribute('data-extra-audience', 'true');
+                audienceEl.appendChild(opt);
+            }
+
+            function removeExtraAudienceOptions() {
+                Array.prototype.slice.call(audienceEl.querySelectorAll('option[data-extra-audience]')).forEach(function (o) { o.remove(); });
+            }
+
+            // Values the editor has no control for, kept as they are when an existing announcement is saved.
+            function keptRoles(values) {
+                return (values || []).filter(function (r) { var v = String(r || '').toLowerCase(); return v !== 'admin' && v !== 'user'; });
+            }
+
             function resetForm(keepTimes) {
                 editingId = null; editingMeta = null;
                 titleEl.value = ''; messageEl.value = ''; levelEl.value = 'info';
@@ -1109,6 +1139,7 @@
                 allowDismissEl.checked = true;
                 dismissModeEl.value = 'permanent';
                 formTags = []; renderTagEditor();
+                removeExtraAudienceOptions();
                 audienceEl.value = 'all';
                 setSelectedDeviceTypes([]); setSelectedExcludedDeviceTypes([]);
                 setSelectedRoles([], includeRoleAdminEl, includeRoleUserEl);
@@ -1131,6 +1162,8 @@
                 dismissModeEl.value = item.dismissMode || 'permanent';
                 formTags = (item.tags || []).slice().sort(function (a, b) { return a.localeCompare(b); });
                 renderTagEditor();
+                removeExtraAudienceOptions();
+                ensureAudienceOption(item.audience || 'all');
                 audienceEl.value = item.audience || 'all';
                 setSelectedDeviceTypes(item.includeDeviceTypes || []);
                 setSelectedExcludedDeviceTypes(item.excludeDeviceTypes || []);
@@ -1436,9 +1469,11 @@
                     dismissMode: dismissModeEl.value || 'permanent', tags: formTags.slice(),
                     audience: audienceEl.value || 'all',
                     includeDeviceTypes: selectedDeviceTypes(), excludeDeviceTypes: selectedExcludedDeviceTypes(),
-                    includeUserRoles: selectedIncludeRoles(), excludeUserRoles: selectedExcludeRoles(),
+                    includeUserRoles: selectedIncludeRoles().concat(keptRoles(editingMeta && editingMeta.includeUserRoles)),
+                    excludeUserRoles: selectedExcludeRoles().concat(keptRoles(editingMeta && editingMeta.excludeUserRoles)),
                     includeUserIds: parseCsv(includeUserIdsEl.value, false), excludeUserIds: parseCsv(excludeUserIdsEl.value, false),
-                    includeLibraryIds: [], excludeLibraryIds: [],
+                    includeLibraryIds: editingMeta ? (editingMeta.includeLibraryIds || []) : [],
+                    excludeLibraryIds: editingMeta ? (editingMeta.excludeLibraryIds || []) : [],
                     isArchived: editingMeta ? !!editingMeta.isArchived : false,
                     isEnabled:  editingMeta ? editingMeta.isEnabled !== false : true
                 };
