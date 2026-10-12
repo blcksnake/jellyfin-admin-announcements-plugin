@@ -159,9 +159,11 @@ public class AnnouncementController : ControllerBase
         => (value ?? string.Empty).Trim().Replace("-", string.Empty).ToLowerInvariant();
 
     /// <summary>
-    /// Server-side part of the targeting rules in banner.js (audience, specific users, admin/user roles),
-    /// so an announcement is only sent to callers it is meant for. Kid status, device type and libraries
+    /// Server-side part of the targeting rules in banner.js (audience, specific users, roles),
+    /// so an announcement is only sent to callers it is meant for. Device type and libraries
     /// are not known here and are still checked by banner.js.
+    /// Jellyfin has no kid flag on users (banner.js looks for an IsKid property that never exists),
+    /// so nobody is a kid: "kids" announcements and kid-only role targeting reach nobody, as in banner.js.
     /// </summary>
     private static bool IsVisibleTo(Announcement a, string? userId, bool isAdmin)
     {
@@ -179,7 +181,7 @@ public class AnnouncementController : ControllerBase
         if (audience == "unauthenticated" && isAuthenticated) return false;
         if (audience == "admins" && !isAdmin) return false;
         if (audience == "nonadmins" && (!isAuthenticated || isAdmin)) return false;
-        if (audience == "kids" && !isAuthenticated) return false;
+        if (audience == "kids") return false;
 
         if (!explicitlyIncluded)
         {
@@ -189,8 +191,7 @@ public class AnnouncementController : ControllerBase
                 : isAdmin ? new[] { "user", "admin" } : new[] { "user" };
 
             if (a.IncludeUserRoles.Count > 0
-                && !a.IncludeUserRoles.Any(r => roles.Contains(r, System.StringComparer.OrdinalIgnoreCase))
-                && !(isAuthenticated && a.IncludeUserRoles.Contains("kid", System.StringComparer.OrdinalIgnoreCase)))
+                && !a.IncludeUserRoles.Any(r => roles.Contains(r, System.StringComparer.OrdinalIgnoreCase)))
                 return false;
 
             if (a.ExcludeUserRoles.Any(r => roles.Contains(r, System.StringComparer.OrdinalIgnoreCase)))
