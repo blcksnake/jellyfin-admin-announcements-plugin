@@ -37,7 +37,10 @@ public class AnnouncementStore
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "[Announcements] Failed to load announcements from {Path}. Starting with empty list.", _path);
+            // Keep the unreadable file: the next Save() would otherwise overwrite it and lose every announcement.
+            var corruptPath = _path + ".corrupt-" + DateTime.UtcNow.ToString("yyyyMMddHHmmss");
+            try { File.Copy(_path, corruptPath, overwrite: true); } catch { /* best effort */ }
+            _logger.LogError(ex, "[Announcements] Failed to load announcements from {Path}. Starting with empty list; the unreadable file was kept as {CorruptPath}.", _path, corruptPath);
             _items = new();
         }
     }
@@ -47,7 +50,11 @@ public class AnnouncementStore
         try
         {
             var json = JsonSerializer.Serialize(_items, new JsonSerializerOptions { WriteIndented = true });
-            File.WriteAllText(_path, json);
+            // Write to a temporary file, then replace: an interrupted write (crash, full disk) can no longer
+            // leave a truncated announcements.json behind.
+            var tempPath = _path + ".tmp";
+            File.WriteAllText(tempPath, json);
+            File.Move(tempPath, _path, overwrite: true);
         }
         catch (Exception ex)
         {
