@@ -64,8 +64,13 @@
         }
     }
 
+    // Dismissed keys are no longer pruned against the polled list: that list depends on the viewer
+    // and is empty when a request fails, so pruning made dismissed banners come back. Keep the most
+    // recent entries instead.
+    const MAX_DISMISSED = 100;
+
     function setDismissed(storage, key, ids) {
-        storage.setItem(key, JSON.stringify(ids));
+        storage.setItem(key, JSON.stringify(ids.slice(-MAX_DISMISSED)));
     }
 
     // Use a content-aware key so edited announcements are treated as new items
@@ -617,23 +622,6 @@
                 const sb = new Date(b.startsAt || 0).getTime();
                 return sb - sa;
             });
-
-        // Normalize stored dismiss entries to currently active announcements only.
-        // This also drops legacy id-only entries from older script versions.
-        const activePermKeys = orderedList
-            .filter(a => a.allowDismiss !== false && (a.dismissMode || 'permanent').toLowerCase() !== 'session')
-            .map(dismissKey);
-        const activeSessionKeys = orderedList
-            .filter(a => a.allowDismiss !== false && (a.dismissMode || 'permanent').toLowerCase() === 'session')
-            .map(dismissKey);
-
-        const permDismissed = getDismissed(localStorage, STORAGE_KEY_PERM)
-            .filter(id => activePermKeys.includes(id));
-        setDismissed(localStorage, STORAGE_KEY_PERM, permDismissed);
-
-        const sessionDismissed = getDismissed(sessionStorage, STORAGE_KEY_SESSION)
-            .filter(id => activeSessionKeys.includes(id));
-        setDismissed(sessionStorage, STORAGE_KEY_SESSION, sessionDismissed);
 
         const visibleList = orderedList
             .filter(a => matchesTargeting(a, viewerContext))
