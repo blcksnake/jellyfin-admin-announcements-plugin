@@ -2,6 +2,10 @@
 
  All notable changes to this project will be documented in this file.
 
+## Unreleased
+
+- **Security**: Announcement targeting (audience, specific users, admin/user roles) is now applied on the server: the anonymous `GET /Plugins/Announcements` endpoint only returns the announcements meant for the caller and no longer exposes targeted user IDs.
+
 ## 0.2.0.7 - 2026-09-17
 
 - Added Jellyfin 12 support by moving the plugin to .NET 10 and the Jellyfin 12 API packages.
