@@ -2,6 +2,11 @@
 
  All notable changes to this project will be documented in this file.
 
+## Unreleased
+
+- Fixed banners never showing when signed out (login page) on Jellyfin 12, and the previous user's banners staying visible after logout.
+- Fixed dismissed banners reappearing after a failed request or a reload.
+
 ## 0.2.0.7 - 2026-09-17
 
 - Added Jellyfin 12 support by moving the plugin to .NET 10 and the Jellyfin 12 API packages.
