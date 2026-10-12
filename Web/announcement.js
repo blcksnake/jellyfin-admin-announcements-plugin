@@ -170,7 +170,14 @@
     function getCurrentUserInfo() {
         try {
             if (window.ApiClient && typeof window.ApiClient.getCurrentUser === 'function') {
-                return window.ApiClient.getCurrentUser() || null;
+                const user = window.ApiClient.getCurrentUser();
+                // jellyfin-apiclient returns a Promise here (rejected when signed out). It cannot be
+                // read synchronously, and returning it made the whole poll reject: use the fallbacks.
+                if (user && typeof user.then === 'function') {
+                    user.catch(() => {});
+                } else {
+                    return user || null;
+                }
             }
         } catch {
             return null;
@@ -286,7 +293,8 @@
             return immediateUser;
         }
 
-        if (!window.ApiClient || typeof window.ApiClient.getUrl !== 'function') {
+        // Signed out: Users/Me would only answer 401.
+        if (!currentToken || !window.ApiClient || typeof window.ApiClient.getUrl !== 'function') {
             return immediateUser;
         }
 
