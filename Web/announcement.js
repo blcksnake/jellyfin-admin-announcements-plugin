@@ -118,7 +118,8 @@
 
     async function fetchAnnouncements() {
         try {
-            const res = await fetch(API_PATH, { credentials: 'include' });
+            // Send the token when signed in: the server only returns announcements targeted at this user.
+            const res = await fetch(API_PATH, { credentials: 'include', headers: getApiAuthHeaders() });
             if (!res.ok) return [];
             return await res.json();
         } catch {
