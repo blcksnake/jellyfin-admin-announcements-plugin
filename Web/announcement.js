@@ -7,24 +7,17 @@
 
     const API_BASE = '/Plugins/Announcements';
     const API_PATH = API_BASE;
-    const STORAGE_KEY_PERM = 'announcements.dismissed.permanent';
-    const STORAGE_KEY_SESSION = 'announcements.dismissed.session';
+    const STORAGE_KEY_PERM = 'announcements.dismissed.permanent.v2';
+    const STORAGE_KEY_SESSION = 'announcements.dismissed.session.v2';
     const SESSION_KEY = 'announcements.runtime.sessionId';
     const POLL_INTERVAL = 3000; // 3 seconds for faster visibility updates
     const INIT_DELAY_MS = 400;
     const MIN_POLL_GAP_MS = 700;
     const activeImpressionIds = new Set();
-    let cachedLibraryContext = null;
-    let cachedLibraryContextAt = 0;
-    let cachedViewerUser = null;
-    let cachedViewerUserAt = 0;
-    let cachedViewerToken = '';
-
-    const LIBRARY_CONTEXT_TTL_MS = 60000;
-    const VIEWER_USER_TTL_MS = 10000;
     let pollInFlight = false;
     let lastPollAt = 0;
     let lastViewerFingerprint = null;
+    let authGeneration = 0;
     let authWatcherHandle = null;
     let lastAuthWatcherState = 'anon';
 
@@ -65,23 +58,13 @@
     }
 
     function setDismissed(storage, key, ids) {
-        storage.setItem(key, JSON.stringify(ids));
+        try { storage.setItem(key, JSON.stringify(ids.slice(-512))); }
+        catch { /* Storage can be unavailable or full; dismissal still closes the card. */ }
     }
 
-    // Use a content-aware key so edited announcements are treated as new items
-    // for dismissal purposes and cannot disappear due to stale cache entries.
+    // The server scopes this opaque content revision to the verified viewer.
     function dismissKey(a) {
-        return [
-            a && a.id ? String(a.id) : '',
-            a && a.title ? String(a.title) : '',
-            a && a.message ? String(a.message) : '',
-            a && a.level ? String(a.level) : '',
-            a && a.startsAt ? String(a.startsAt) : '',
-            a && a.endsAt ? String(a.endsAt) : '',
-            a && a.allowDismiss === false ? '0' : '1',
-            a && a.dismissMode ? String(a.dismissMode) : 'permanent',
-            a && a.priority != null ? String(a.priority) : '1'
-        ].join('|');
+        return a && /^[A-F0-9]{64}$/i.test(a.dismissalKey || '') ? a.dismissalKey : '';
     }
 
     function isDismissed(a) {
@@ -116,13 +99,22 @@
         setDismissed(localStorage, STORAGE_KEY_PERM, ids);
     }
 
-    async function fetchAnnouncements() {
+    async function fetchAnnouncements(token) {
+        const controller = new AbortController();
+        const timeout = window.setTimeout(() => controller.abort(), 10000);
         try {
-            const res = await fetch(API_PATH, { credentials: 'include' });
-            if (!res.ok) return [];
-            return await res.json();
+            const res = await fetch(API_PATH, {
+                credentials: 'include', headers: getApiAuthHeaders({}, token),
+                cache: 'no-store', signal: controller.signal
+            });
+            if (res.status === 401 || res.status === 403) return [];
+            if (!res.ok) return null;
+            const list = await res.json();
+            return Array.isArray(list) ? list : null;
         } catch {
-            return [];
+            return null;
+        } finally {
+            window.clearTimeout(timeout);
         }
     }
 
@@ -147,12 +139,6 @@
         return normalizeList(list, true).includes(needle);
     }
 
-    function hasAnyIntersection(left, right) {
-        const leftNormalized = normalizeList(left, true);
-        const rightNormalized = normalizeList(right, true);
-        return leftNormalized.some(value => rightNormalized.includes(value));
-    }
-
     function detectDeviceType() {
         const ua = ((navigator && navigator.userAgent) || '').toLowerCase();
         if (/(smart-tv|smarttv|tizen|webos|hbbtv|roku|appletv|android tv|fire tv|aft)/.test(ua)) {
@@ -167,214 +153,10 @@
         return 'desktop';
     }
 
-    function getCurrentUserInfo() {
-        try {
-            if (window.ApiClient && typeof window.ApiClient.getCurrentUser === 'function') {
-                return window.ApiClient.getCurrentUser() || null;
-            }
-        } catch {
-            return null;
-        }
-
-        try {
-            if (window.ApiClient && window.ApiClient._currentUser) {
-                return window.ApiClient._currentUser;
-            }
-        } catch {
-            return null;
-        }
-
-        return null;
-    }
-
-    function readAny(obj, names) {
-        if (!obj) return undefined;
-        for (const name of names) {
-            if (Object.prototype.hasOwnProperty.call(obj, name)) {
-                return obj[name];
-            }
-        }
-        return undefined;
-    }
-
-    function normalizeId(value) {
-        return String(value || '').trim().replace(/-/g, '').toLowerCase();
-    }
-
-    function detectUserRoles(user) {
-        const roles = ['guest'];
-        const userId = readAny(user, ['Id', 'id']);
-        if (!user || !userId) {
-            return roles;
-        }
-
-        roles.splice(0, roles.length, 'user');
-
-        const policy = readAny(user, ['Policy', 'policy']) || {};
-        if (readAny(policy, ['IsAdministrator', 'isAdministrator']) === true) {
-            roles.push('admin');
-        }
-
-        if (
-            readAny(policy, ['IsKid', 'isKid', 'IsKids', 'isKids']) === true ||
-            readAny(user, ['IsKid', 'isKid']) === true)
-        {
-            roles.push('kid');
-        }
-
-        return Array.from(new Set(roles));
-    }
-
-    async function fetchAccessibleLibraryIds(userId) {
-        if (!userId || !window.ApiClient) {
-            return [];
-        }
-
-        const now = Date.now();
-        if (
-            cachedLibraryContext &&
-            cachedLibraryContext.userId === userId &&
-            now - cachedLibraryContextAt < LIBRARY_CONTEXT_TTL_MS
-        ) {
-            return cachedLibraryContext.libraryIds;
-        }
-
-        const path = 'Users/' + encodeURIComponent(userId) + '/Views';
-        try {
-            const url = window.ApiClient.getUrl(path);
-            const response = await fetch(url, {
-                credentials: 'include',
-                headers: getApiAuthHeaders()
-            });
-
-            if (!response.ok) {
-                return [];
-            }
-
-            const payload = await response.json();
-            const items = Array.isArray(payload && payload.Items) ? payload.Items : [];
-            const libraryIds = items
-                .map(item => item && (item.CollectionFolderId || item.Id))
-                .filter(id => !!id)
-                .map(id => String(id));
-
-            cachedLibraryContext = { userId, libraryIds };
-            cachedLibraryContextAt = now;
-            return libraryIds;
-        } catch {
-            return [];
-        }
-    }
-
-    async function fetchCurrentUserInfo() {
-        const now = Date.now();
-        const currentToken = getAccessToken();
-        if (
-            cachedViewerUser &&
-            now - cachedViewerUserAt < VIEWER_USER_TTL_MS &&
-            cachedViewerToken === currentToken
-        ) {
-            return cachedViewerUser;
-        }
-
-        const immediateUser = getCurrentUserInfo();
-        const immediateUserId = readAny(immediateUser, ['Id', 'id']);
-        if (immediateUser && immediateUserId) {
-            cachedViewerUser = immediateUser;
-            cachedViewerUserAt = now;
-            cachedViewerToken = currentToken;
-            return immediateUser;
-        }
-
-        if (!window.ApiClient || typeof window.ApiClient.getUrl !== 'function') {
-            return immediateUser;
-        }
-
-        try {
-            const url = window.ApiClient.getUrl('Users/Me');
-            const response = await fetch(url, {
-                credentials: 'include',
-                headers: getApiAuthHeaders()
-            });
-
-            if (!response.ok) {
-                return immediateUser;
-            }
-
-            const user = await response.json();
-            const userId = readAny(user, ['Id', 'id']);
-            if (user && userId) {
-                cachedViewerUser = user;
-                cachedViewerUserAt = now;
-                cachedViewerToken = currentToken;
-                return user;
-            }
-        } catch {
-            return immediateUser;
-        }
-
-        return immediateUser;
-    }
-
-    async function getViewerContext() {
-        const user = await fetchCurrentUserInfo();
-        const currentUserId = readAny(user, ['Id', 'id']);
-        const isAuthenticated = !!(user && currentUserId);
-        const userId = isAuthenticated ? String(currentUserId) : null;
-        const userRoles = detectUserRoles(user);
-        const libraryIds = isAuthenticated ? await fetchAccessibleLibraryIds(userId) : [];
-
-        return {
-            isAuthenticated,
-            userId,
-            userRoles,
-            deviceType: detectDeviceType(),
-            libraryIds
-        };
-    }
-
     function matchesTargeting(a, context) {
-        const audience = String((a && a.audience) || 'all').toLowerCase();
-        const isAdmin = context.userRoles.includes('admin');
-        const isKid = context.userRoles.includes('kid');
-        const includeUserIds = normalizeList(a.includeUserIds, false);
-        const excludeUserIds = normalizeList(a.excludeUserIds, false);
-        const explicitlyIncludedUser = !!(
-            context.userId &&
-            includeUserIds.some(id => normalizeId(id) === normalizeId(context.userId))
-        );
-
-        if (excludeUserIds.length && context.userId) {
-            const excludedUser = excludeUserIds.some(id => normalizeId(id) === normalizeId(context.userId));
-            if (excludedUser) return false;
-        }
-
-        if (includeUserIds.length && !explicitlyIncludedUser) {
-            return false;
-        }
-
-        if (audience === 'authenticated' && !context.isAuthenticated) return false;
-        if (audience === 'unauthenticated' && context.isAuthenticated) return false;
-        if (audience === 'admins' && !isAdmin) return false;
-        if (audience === 'nonadmins' && (!context.isAuthenticated || isAdmin)) return false;
-        if (audience === 'kids' && !isKid) return false;
-        if (audience === 'nonkids' && isKid) return false;
-
+        // Identity and library authorization have already run on the server.
         if (normalizeList(a.includeDeviceTypes).length && !listHasValue(a.includeDeviceTypes, context.deviceType)) return false;
-        if (listHasValue(a.excludeDeviceTypes, context.deviceType)) return false;
-
-        if (!explicitlyIncludedUser) {
-            if (normalizeList(a.includeUserRoles).length && !hasAnyIntersection(a.includeUserRoles, context.userRoles)) return false;
-            if (hasAnyIntersection(a.excludeUserRoles, context.userRoles)) return false;
-        }
-
-        const includeLibraries = normalizeList(a.includeLibraryIds, false);
-        if (includeLibraries.length && !hasAnyIntersection(includeLibraries, context.libraryIds)) return false;
-
-        const excludeLibraries = normalizeList(a.excludeLibraryIds, false);
-        if (excludeLibraries.length && hasAnyIntersection(excludeLibraries, context.libraryIds)) return false;
-
-        return true;
+        return !listHasValue(a.excludeDeviceTypes, context.deviceType);
     }
 
     async function postEvent(path, body) {
@@ -382,7 +164,7 @@
             await fetch(API_BASE + path, {
                 method: 'POST',
                 credentials: 'include',
-                headers: { 'Content-Type': 'application/json' },
+                headers: getApiAuthHeaders({ 'Content-Type': 'application/json' }),
                 body: body ? JSON.stringify(body) : undefined,
                 keepalive: true
             });
@@ -424,6 +206,7 @@
 
         const card = document.createElement('section');
         card.className = 'jf-announcement jf-announcement-' + level;
+        card.setAttribute('data-revision', dismissKey(a));
         if (a.id && a.id !== 'preview') card.setAttribute('data-id', a.id);
 
         const header = document.createElement('header');
@@ -534,8 +317,7 @@
         return '';
     }
 
-    function getApiAuthHeaders(extra) {
-        const token = getAccessToken();
+    function getApiAuthHeaders(extra, token = getAccessToken()) {
         const headers = Object.assign({}, extra || {});
         if (token) {
             // Jellyfin 12 requires the standard authorization header unless legacy
@@ -546,21 +328,8 @@
         return headers;
     }
 
-    function getViewerFingerprint(context) {
-        if (!context || !context.isAuthenticated || !context.userId) {
-            return 'anon';
-        }
-        return normalizeId(context.userId) + '|' + getAccessToken();
-    }
-
     function getAuthWatcherState() {
-        const token = getAccessToken();
-        const user = getCurrentUserInfo();
-        const userId = normalizeId(readAny(user, ['Id', 'id']));
-        if (!token && !userId) {
-            return 'anon';
-        }
-        return userId + '|' + token;
+        return getAccessToken();
     }
 
     function startAuthWatcher() {
@@ -570,12 +339,9 @@
             const nextState = getAuthWatcherState();
             if (nextState !== lastAuthWatcherState) {
                 lastAuthWatcherState = nextState;
-                cachedViewerUser = null;
-                cachedViewerUserAt = 0;
-                cachedViewerToken = '';
-                cachedLibraryContext = null;
-                cachedLibraryContextAt = 0;
-                // Login/logout or token rotation detected: refresh immediately.
+                authGeneration++;
+                clearDisplayedAnnouncements();
+                lastPollAt = 0;
                 schedulePoll(0);
             }
         }, 1000);
@@ -589,15 +355,20 @@
         pollInFlight = true;
         lastPollAt = now;
 
+        const token = getAccessToken();
+        const generation = authGeneration;
         try {
-        const list = await fetchAnnouncements();
-        const viewerContext = await getViewerContext();
-        const viewerFingerprint = getViewerFingerprint(viewerContext);
-
-        if (lastViewerFingerprint !== null && viewerFingerprint !== lastViewerFingerprint) {
+        const list = await fetchAnnouncements(token);
+        if (token !== getAccessToken() || generation !== authGeneration) {
+            clearDisplayedAnnouncements();
+            return;
+        }
+        if (lastViewerFingerprint !== null && token !== lastViewerFingerprint) {
             clearDisplayedAnnouncements();
         }
-        lastViewerFingerprint = viewerFingerprint;
+        lastViewerFingerprint = token;
+        if (list === null) return;
+        const viewerContext = { deviceType: detectDeviceType() };
 
         const orderedList = list
             .slice()
@@ -609,23 +380,6 @@
                 const sb = new Date(b.startsAt || 0).getTime();
                 return sb - sa;
             });
-
-        // Normalize stored dismiss entries to currently active announcements only.
-        // This also drops legacy id-only entries from older script versions.
-        const activePermKeys = orderedList
-            .filter(a => a.allowDismiss !== false && (a.dismissMode || 'permanent').toLowerCase() !== 'session')
-            .map(dismissKey);
-        const activeSessionKeys = orderedList
-            .filter(a => a.allowDismiss !== false && (a.dismissMode || 'permanent').toLowerCase() === 'session')
-            .map(dismissKey);
-
-        const permDismissed = getDismissed(localStorage, STORAGE_KEY_PERM)
-            .filter(id => activePermKeys.includes(id));
-        setDismissed(localStorage, STORAGE_KEY_PERM, permDismissed);
-
-        const sessionDismissed = getDismissed(sessionStorage, STORAGE_KEY_SESSION)
-            .filter(id => activeSessionKeys.includes(id));
-        setDismissed(sessionStorage, STORAGE_KEY_SESSION, sessionDismissed);
 
         const visibleList = orderedList
             .filter(a => matchesTargeting(a, viewerContext))
@@ -640,7 +394,8 @@
         // Remove banners that are no longer active
         document.querySelectorAll('.jf-announcement[data-id]').forEach(el => {
             const id = el.getAttribute('data-id');
-            if (!visibleIds.includes(id)) {
+            const current = loginAwareList.find(a => a.id === id);
+            if (!visibleIds.includes(id) || el.getAttribute('data-revision') !== dismissKey(current)) {
                 stopImpression(id);
                 el.remove();
             }
@@ -652,6 +407,10 @@
         toShow.forEach(a => showAnnouncement(a));
         } finally {
             pollInFlight = false;
+            if (token !== getAccessToken() || generation !== authGeneration) {
+                lastPollAt = 0;
+                schedulePoll(0);
+            }
         }
     }
 
@@ -662,6 +421,9 @@
     }
 
     function init() {
+        // Remove legacy keys containing complete announcement messages.
+        try { localStorage.removeItem('announcements.dismissed.permanent'); } catch {}
+        try { sessionStorage.removeItem('announcements.dismissed.session'); } catch {}
         ensureCssLoaded();
         // Start observing authentication before the initial request. On Jellyfin Web,
         // the script loads on the anonymous login route and the SPA then hydrates the

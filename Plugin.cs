@@ -10,6 +10,7 @@ using MediaBrowser.Common.Plugins;
 using MediaBrowser.Model.Plugins;
 using MediaBrowser.Model.Serialization;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Hosting;
 
 namespace Jellyfin.Plugin.Announcements;
 
@@ -31,12 +32,13 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
         public bool ShowOnLoginPage { get; set; }
     }
 
-    public Plugin(IApplicationPaths applicationPaths, IXmlSerializer xmlSerializer, ILogger<Plugin> logger)
+    public Plugin(IApplicationPaths applicationPaths, IXmlSerializer xmlSerializer, ILogger<Plugin> logger, IHostApplicationLifetime lifetime)
         : base(applicationPaths, xmlSerializer)
     {
         _logger = logger;
         Instance = this;
         Store = new AnnouncementStore(applicationPaths, logger);
+        lifetime.ApplicationStopping.Register(Store.Dispose);
         _runtimeSettingsPath = Path.Combine(applicationPaths.DataPath, "announcements.settings.json");
         _runtimeSettings = LoadRuntimeSettings();
         var indexPatched = PatchJellyfinWebIndex();
@@ -86,6 +88,20 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
 
     /// <summary>Gets current custom web path configuration.</summary>
     public string? GetCustomWebPath() => Configuration.CustomWebPath;
+
+    /// <summary>Checks custom selections against paths approved by the local deployment.</summary>
+    public bool AreCustomPathsAllowed(string? directory, string? index)
+    {
+        try
+        {
+            return (string.IsNullOrWhiteSpace(directory) || IsIndexPathSafe(Path.Combine(directory, "index.html")))
+                && (string.IsNullOrWhiteSpace(index) || IsIndexPathSafe(index));
+        }
+        catch (Exception ex) when (ex is ArgumentException or IOException or UnauthorizedAccessException)
+        {
+            return false;
+        }
+    }
 
     /// <summary>Sets custom web path configuration.</summary>
     public void SetCustomWebPath(string? path)
@@ -232,12 +248,17 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
                     return true;
                 }
 
+                var lastBodyPos = content.LastIndexOf("</body>", StringComparison.OrdinalIgnoreCase);
+                if (lastBodyPos < 0)
+                {
+                    _logger.LogWarning("[Announcements] Refused index without a closing body tag at {Path}.", full);
+                    continue;
+                }
                 // Back up once
                 var bak = full + ".bak";
                 if (!File.Exists(bak)) File.Copy(full, bak);
 
                 // Replace only the last </body> to avoid double-injection if the tag appears multiple times
-                var lastBodyPos = content.LastIndexOf("</body>", StringComparison.OrdinalIgnoreCase);
                 if (lastBodyPos >= 0)
                     content = content.Substring(0, lastBodyPos) + ScriptTag + "\n" + content.Substring(lastBodyPos);
                 File.WriteAllText(full, content, System.Text.Encoding.UTF8);
@@ -256,7 +277,7 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
         return false;
     }
 
-    private IEnumerable<string> BuildIndexCandidates()
+    private IEnumerable<string> BuildIndexCandidates(bool includeConfigured = true)
     {
         var candidates = new List<string>();
 
@@ -271,13 +292,13 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
         }
 
         // Priority 1: Direct path from plugin configuration (highest priority)
-        if (!string.IsNullOrWhiteSpace(Configuration.CustomIndexPath))
+        if (includeConfigured && !string.IsNullOrWhiteSpace(Configuration.CustomIndexPath))
         {
             candidates.Add(Configuration.CustomIndexPath);
         }
 
         // Priority 2: Custom web directory from plugin configuration
-        if (!string.IsNullOrWhiteSpace(Configuration.CustomWebPath))
+        if (includeConfigured && !string.IsNullOrWhiteSpace(Configuration.CustomWebPath))
         {
             Add(Configuration.CustomWebPath, "index.html");
         }
@@ -353,28 +374,9 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
     }
 
     /// <summary>Ensures a resolved index.html path is safe to read and patch.</summary>
-    private static bool IsIndexPathSafe(string fullPath)
+    private bool IsIndexPathSafe(string fullPath)
     {
-        // Must target an HTML file
-        if (!fullPath.EndsWith(".html", StringComparison.OrdinalIgnoreCase) &&
-            !fullPath.EndsWith(".htm", StringComparison.OrdinalIgnoreCase))
-            return false;
-
-        // Refuse known sensitive system directories
-#pragma warning disable CA1307
-        var unsafe_prefixes = new[]
-        {
-            "/etc/", "/proc/", "/sys/", "/root/", "/dev/",
-            "C:\\Windows\\", "C:\\Users\\", "C:\\ProgramData\\"
-        };
-#pragma warning restore CA1307
-        foreach (var prefix in unsafe_prefixes)
-        {
-            if (fullPath.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
-                return false;
-        }
-
-        return true;
+        return WebIndexPathPolicy.IsApproved(fullPath, BuildIndexCandidates(includeConfigured: false));
     }
 
 }

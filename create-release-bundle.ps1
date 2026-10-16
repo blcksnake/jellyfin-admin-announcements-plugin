@@ -2,11 +2,15 @@
 # Builds publish output and creates a clean zip for GitHub/Jellyfin repository distribution.
 
 param(
-    [string]$Version = "0.2.0.7",
+    [string]$Version = "0.2.0.8",
     [switch]$SkipBuild
 )
 
 $ErrorActionPreference = "Stop"
+
+if ($Version -notmatch '^\d+\.\d+\.\d+\.\d+$') {
+    throw "Version must contain four numeric components."
+}
 
 $publishDir = Join-Path $PSScriptRoot "publish"
 $releaseRoot = Join-Path $PSScriptRoot "release"
@@ -15,6 +19,7 @@ $zipPath = Join-Path $releaseRoot ("Announcements_{0}.zip" -f $Version)
 
 if (-not $SkipBuild) {
     dotnet publish (Join-Path $PSScriptRoot "Jellyfin.Plugin.Announcements.csproj") -c Release -o $publishDir
+    if ($LASTEXITCODE -ne 0) { throw "Plugin publish failed. Refusing to package stale output." }
 }
 
 if (-not (Test-Path $publishDir)) {
@@ -22,7 +27,12 @@ if (-not (Test-Path $publishDir)) {
 }
 
 if (Test-Path $bundleDir) {
-    cmd /c rmdir /s /q "$bundleDir"
+    $resolvedBundle = (Resolve-Path -LiteralPath $bundleDir).Path
+    $resolvedRoot = (Resolve-Path -LiteralPath $releaseRoot).Path
+    if (-not $resolvedBundle.StartsWith($resolvedRoot + [IO.Path]::DirectorySeparatorChar, [StringComparison]::OrdinalIgnoreCase)) {
+        throw "Bundle directory must be inside the release directory."
+    }
+    Remove-Item -LiteralPath $resolvedBundle -Recurse -Force
 }
 
 New-Item -ItemType Directory -Path $bundleDir -Force | Out-Null

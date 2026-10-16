@@ -13,8 +13,8 @@ Update version in:
 
 ## 2) Build and Publish
 
-- dotnet build -c Release
-- dotnet publish -c Release -o publish
+- dotnet build Jellyfin.Plugin.Announcements.csproj -c Release
+- dotnet publish Jellyfin.Plugin.Announcements.csproj -c Release -o publish
 
 ## 3) Create Release Bundle
 
@@ -64,10 +64,3 @@ Common repository error fix:
 - `An error occurred while getting the plugin details from the repository.`
 - Cause: manifest format is incorrect (must be an array with `versions[]`) or JSON is invalid.
 - Fix: regenerate with `build-repository-manifest.ps1` and verify the URL serves raw JSON.
-
-## 6) Post-Release Validation
-
-- Install in a clean Jellyfin instance
-- Verify admin page loads
-- Verify create/edit/delete and banner rendering
-- Verify login-page toggle and dismiss behavior

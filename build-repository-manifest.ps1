@@ -2,8 +2,8 @@ param(
     [Parameter(Mandatory = $true)]
     [string]$SourceUrl,
 
-    [string]$Version = "0.2.0.7",
-    [string]$ZipPath = ".\release\Announcements_0.2.0.7.zip",
+    [string]$Version = "0.2.0.8",
+    [string]$ZipPath = ".\release\Announcements_0.2.0.8.zip",
     [string]$OutputPath = ".\repository\manifest.json"
 )
 

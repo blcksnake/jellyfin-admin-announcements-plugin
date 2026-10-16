@@ -484,6 +484,11 @@
                                     <select id="Audience" is="emby-select" class="emby-select-withcolor emby-select">
                                         <option value="all" selected>Everyone</option>
                                         <option value="authenticated">Signed-in users only</option>
+                                        <option value="unauthenticated">Signed-out visitors only</option>
+                                        <option value="admins">Administrators only</option>
+                                        <option value="nonadmins">Non-administrators only</option>
+                                        <option value="kids">Kids (legacy; no Jellyfin kid classification)</option>
+                                        <option value="nonkids">Non-kids (legacy)</option>
                                     </select>
                                 </div>
                                 <div class="secondaryText jf-mt-8">Use the login-page toggle above for login placement, and roles/users below for finer targeting.</div>
@@ -723,7 +728,9 @@
 #AnnouncementsConfigPage .jf-mb-16 { margin-bottom:16px; }
 #AnnouncementsConfigPage .jf-ml-22 { margin-left:22px; }
 #AnnouncementsConfigPage .jf-pb-2 { padding-bottom:2px; }
-#AnnouncementsConfigPage .jf-textarea { width:100%; min-height:96px; resize:vertical; }
+#AnnouncementsConfigPage .jf-textarea { box-sizing:border-box; width:100%; min-height:110px; resize:vertical; padding:12px; border:1px solid var(--c-border-light); border-radius:var(--r-sm); background:var(--c-surface-1); color:var(--c-text-bright); font:inherit; line-height:1.6; }
+#AnnouncementsConfigPage .jf-textarea:focus { outline:2px solid var(--c-accent); outline-offset:1px; }
+#AnnouncementsConfigPage #CancelEditBtn { background:var(--c-btn-muted); color:var(--c-text-bright); border:1px solid var(--c-border-light); }
 #AnnouncementsConfigPage .jf-select-reset { margin:0; }
 #AnnouncementsConfigPage .jf-filter-input { margin:0; min-width:200px; flex:1; }
 #AnnouncementsConfigPage .jf-filter-select { margin:0; min-width:140px; }
@@ -823,7 +830,7 @@
             }
 
             function esc(value) {
-                var s = (value || '').toString();
+                var s = (value == null ? '' : value).toString();
                 return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
             }
 
@@ -878,14 +885,14 @@
             }
 
             function selectedIncludeRoles() {
-                var r = [];
+                var r = (editingMeta && editingMeta.includeUserRoles || []).filter(function (role) { return !/^(admin|user)$/i.test(role); });
                 if (includeRoleAdminEl.checked) r.push('admin');
                 if (includeRoleUserEl.checked)  r.push('user');
                 return r;
             }
 
             function selectedExcludeRoles() {
-                var r = [];
+                var r = (editingMeta && editingMeta.excludeUserRoles || []).filter(function (role) { return !/^(admin|user)$/i.test(role); });
                 if (excludeRoleAdminEl.checked) r.push('admin');
                 if (excludeRoleUserEl.checked)  r.push('user');
                 return r;
@@ -1195,8 +1202,8 @@
 
             function renderMetrics(item) {
                 return '<div class="jf-metrics">' +
-                    '<div class="jf-metric"><div class="jf-metric__label">Views</div><div class="jf-metric__value">' + esc(item.viewCount || 0) + '</div></div>' +
-                    '<div class="jf-metric"><div class="jf-metric__label">Dismisses</div><div class="jf-metric__value">' + esc(item.dismissCount || 0) + '</div></div>' +
+                    '<div class="jf-metric" title="Unverified browser reports"><div class="jf-metric__label">Estimated views</div><div class="jf-metric__value">' + esc(item.viewCount || 0) + '</div></div>' +
+                    '<div class="jf-metric" title="Unverified browser reports"><div class="jf-metric__label">Estimated dismisses</div><div class="jf-metric__value">' + esc(item.dismissCount || 0) + '</div></div>' +
                     '<div class="jf-metric"><div class="jf-metric__label">Active impressions</div><div class="jf-metric__value">' + esc(item.activeImpressions || 0) + '</div></div>' +
                     '</div>';
             }
@@ -1223,7 +1230,7 @@
                         '<div class="jf-ann-card__badges">' +
                             levelPill(level) + statusPill(status) +
                             (item.isEnabled ? pill('enabled', 'enabled') : pill('disabled', 'disabled')) +
-                            (item.isArchived ? pill('archived', 'arch') : '') +
+                            (item.isArchived && status !== 'archived' ? pill('archived', 'arch') : '') +
                         '</div>' +
                         '<div class="jf-ann-card__title">' + esc(item.title) + '</div>' +
                         '<div class="jf-ann-card__text">' + esc(item.message) + '</div>' +
@@ -1438,11 +1445,13 @@
                     includeDeviceTypes: selectedDeviceTypes(), excludeDeviceTypes: selectedExcludedDeviceTypes(),
                     includeUserRoles: selectedIncludeRoles(), excludeUserRoles: selectedExcludeRoles(),
                     includeUserIds: parseCsv(includeUserIdsEl.value, false), excludeUserIds: parseCsv(excludeUserIdsEl.value, false),
-                    includeLibraryIds: [], excludeLibraryIds: [],
+                    includeLibraryIds: editingMeta && editingMeta.includeLibraryIds || [],
+                    excludeLibraryIds: editingMeta && editingMeta.excludeLibraryIds || [],
                     isArchived: editingMeta ? !!editingMeta.isArchived : false,
                     isEnabled:  editingMeta ? editingMeta.isEnabled !== false : true
                 };
                 if (editingId) payload.id = editingId;
+                if (!audienceEl.value) { showStatus('Select a supported audience before saving.', true); return false; }
                 if (!payload.title || !payload.message) { showStatus('Title and message are required.', true); return false; }
 
                 Dashboard.showLoadingMsg();

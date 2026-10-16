@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using MediaBrowser.Controller.Library;
 
 namespace Jellyfin.Plugin.Announcements.Api;
 
@@ -19,6 +20,7 @@ namespace Jellyfin.Plugin.Announcements.Api;
 [ApiController]
 [Route("Plugins/Announcements")]
 [Produces(MediaTypeNames.Application.Json)]
+[PersistenceExceptionFilter]
 public class AnnouncementController : ControllerBase
 {
     public class DisplaySettingsDto
@@ -98,10 +100,11 @@ public class AnnouncementController : ControllerBase
     };
 
     private readonly AnnouncementStore _store;
+    private readonly IUserManager _users;
+    private readonly ILibraryManager _libraries;
 
     // Per-ID+IP throttle for anonymous analytics endpoints (prevent abuse / memory exhaustion)
-    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, long> _analyticsTicks = new();
-    private const int AnalyticsMinIntervalMs = 500;
+    private static readonly AnalyticsThrottle Analytics = new();
 
     private bool AllowAnalytics(string id, string eventName)
     {
@@ -110,10 +113,7 @@ public class AnnouncementController : ControllerBase
         // by announcement and IP incorrectly rejects the second, legitimate event.
         var key = id + "|" + eventName + "|" + ip;
         var now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-        var last = _analyticsTicks.GetOrAdd(key, 0L);
-        if (now - last < AnalyticsMinIntervalMs) return false;
-        _analyticsTicks[key] = now;
-        return true;
+        return Analytics.Allow(key, now);
     }
 
     private static int PriorityFromLevel(string level)
@@ -148,8 +148,10 @@ public class AnnouncementController : ControllerBase
     private static bool ContainsOnlyAllowed(IEnumerable<string> values, HashSet<string> allowed)
         => values.All(allowed.Contains);
 
-    public AnnouncementController()
+    public AnnouncementController(IUserManager users, ILibraryManager libraries)
     {
+        _users = users;
+        _libraries = libraries;
         _store = Plugin.Instance?.Store
             ?? throw new InvalidOperationException("Announcements plugin is not loaded.");
     }
@@ -158,8 +160,24 @@ public class AnnouncementController : ControllerBase
     [HttpGet]
     [AllowAnonymous]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public ActionResult<IReadOnlyList<Announcement>> GetActive()
-        => Ok(_store.GetActive());
+    public IActionResult GetActive()
+    {
+        Response.Headers.CacheControl = "no-store";
+        Guid? viewer = User.Identity?.IsAuthenticated == true
+            && Guid.TryParse(User.FindFirst("Jellyfin-UserId")?.Value, out var id) && id != Guid.Empty
+                ? id : null;
+        var items = _store.GetActive();
+        HashSet<Guid>? libraries = null;
+        if (viewer.HasValue && items.Any(a => a.IncludeLibraryIds.Count > 0 || a.ExcludeLibraryIds.Count > 0))
+        {
+            var user = _users.GetUserById(viewer.Value);
+            if (user is not null)
+                libraries = _libraries.GetUserRootFolder().GetChildren(user, true).Select(folder => folder.Id).ToHashSet();
+        }
+        return Ok(items.Where(item => AnnouncementVisibility.CanRead(item, viewer,
+            User.IsInRole("Administrator"), libraries))
+            .Select(item => AnnouncementVisibility.ToPublicResponse(item, viewer)).ToArray());
+    }
 
     /// <summary>Returns all announcements including inactive (admin only).</summary>
     [HttpGet("Admin")]
@@ -353,6 +371,9 @@ public class AnnouncementController : ControllerBase
             return BadRequest("Plugin is not loaded.");
         }
 
+        if (!Plugin.Instance.AreCustomPathsAllowed(settings.CustomWebPath, settings.CustomIndexPath))
+            return BadRequest("Select an existing deployment-approved index.html. For a nonstandard installation, the server operator must set JELLYFIN_WEB_DIR or JELLYFIN_WEB_INDEX_PATH first. Symbolic links are not supported.");
+
         Plugin.Instance.SetCustomWebPath(settings.CustomWebPath);
         Plugin.Instance.SetCustomIndexPath(settings.CustomIndexPath);
         Plugin.Instance.SetEnablePathLogging(settings.EnablePathLogging);
@@ -381,7 +402,7 @@ public class AnnouncementController : ControllerBase
 
     // ── Analytics endpoints (anonymous — fire-and-forget from banner.js) ──────────
 
-    /// <summary>Records that a user viewed an announcement. Idempotent; ignores unknown IDs.</summary>
+    /// <summary>Records an unverified browser view estimate; ignores unknown IDs.</summary>
     [HttpPost("{id}/View")]
     [AllowAnonymous]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -394,7 +415,7 @@ public class AnnouncementController : ControllerBase
         return NoContent();
     }
 
-    /// <summary>Records that a user dismissed an announcement. Idempotent; ignores unknown IDs.</summary>
+    /// <summary>Records an unverified browser dismissal estimate; ignores unknown IDs.</summary>
     [HttpPost("{id}/Dismiss")]
     [AllowAnonymous]
     [ProducesResponseType(StatusCodes.Status204NoContent)]

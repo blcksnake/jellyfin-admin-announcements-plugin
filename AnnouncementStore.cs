@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
+using System.Threading;
 using MediaBrowser.Common.Configuration;
 using Microsoft.Extensions.Logging;
 
@@ -12,19 +13,24 @@ namespace Jellyfin.Plugin.Announcements;
 /// Thread-safe, JSON-backed store for announcements.
 /// Registered as a singleton in Jellyfin's DI container.
 /// </summary>
-public class AnnouncementStore
+public class AnnouncementStore : IDisposable
 {
     private readonly object _sync = new();
     private List<Announcement> _items = new();
     private readonly string _path;
     private readonly Dictionary<string, HashSet<string>> _activeImpressions = new(StringComparer.Ordinal);
     private readonly ILogger _logger;
+    private string _persistedJson = "[]";
+    private bool _writeBlocked;
+    private bool _analyticsDirty;
+    private readonly Timer _analyticsTimer;
 
     public AnnouncementStore(IApplicationPaths appPaths, ILogger logger)
     {
         _logger = logger;
         _path = Path.Combine(appPaths.DataPath, "announcements.json");
         Load();
+        _analyticsTimer = new Timer(_ => FlushAnalytics(), null, TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(30));
     }
 
     private void Load()
@@ -33,26 +39,84 @@ public class AnnouncementStore
         {
             if (!File.Exists(_path)) { Save(); return; }
             var json = File.ReadAllText(_path);
-            _items = JsonSerializer.Deserialize<List<Announcement>>(json) ?? new();
+            _items = JsonSerializer.Deserialize<List<Announcement>>(json)
+                ?? throw new JsonException("Expected an announcement array.");
+            // Validate records before accepting the file as a recoverable snapshot.
+            foreach (var item in _items) _ = CloneForRead(item);
+            _persistedJson = json;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "[Announcements] Failed to load announcements from {Path}. Starting with empty list.", _path);
+            _writeBlocked = true;
+            if (ex is JsonException or ArgumentException or NullReferenceException)
+            {
+                var recovery = _path + ".recovery-" + Guid.NewGuid().ToString("N");
+                try
+                {
+                    File.Copy(_path, recovery, overwrite: false);
+                    _writeBlocked = false;
+                    _logger.LogError(ex, "[Announcements] Invalid data preserved at {Recovery}. Starting with no announcements.", recovery);
+                }
+                catch (Exception backupError)
+                {
+                    _logger.LogError(backupError, "[Announcements] Recovery copy failed. Writes are disabled to protect {Path}.", _path);
+                }
+            }
+            else
+                _logger.LogError(ex, "[Announcements] Cannot read {Path}. Writes are disabled until the plugin is restarted after repair.", _path);
             _items = new();
         }
     }
 
     private void Save()
     {
+        string? staging = null;
         try
         {
+            if (_writeBlocked) throw new IOException("Storage is locked after an unsuccessful load.");
             var json = JsonSerializer.Serialize(_items, new JsonSerializerOptions { WriteIndented = true });
-            File.WriteAllText(_path, json);
+            staging = _path + ".pending-" + Guid.NewGuid().ToString("N");
+            using (var stream = new FileStream(staging, FileMode.CreateNew, FileAccess.Write, FileShare.None))
+            {
+                var bytes = System.Text.Encoding.UTF8.GetBytes(json);
+                stream.Write(bytes);
+                stream.Flush(flushToDisk: true);
+            }
+            File.Move(staging, _path, overwrite: true);
+            _persistedJson = json;
+            _analyticsDirty = false;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "[Announcements] Failed to save announcements to {Path}. Data may be lost.", _path);
+            _items = JsonSerializer.Deserialize<List<Announcement>>(_persistedJson)!;
+            _analyticsDirty = false;
+            _logger.LogError(ex, "[Announcements] Save failed for {Path}; changes were rolled back.", _path);
+            throw;
         }
+        finally
+        {
+            if (staging is not null)
+            {
+                try { File.Delete(staging); }
+                catch (Exception ex) { _logger.LogWarning(ex, "[Announcements] Could not remove staging file {Path}.", staging); }
+            }
+        }
+    }
+
+    public void FlushAnalytics()
+    {
+        lock (_sync)
+        {
+            if (!_analyticsDirty) return;
+            try { Save(); }
+            catch (Exception ex) { _logger.LogWarning(ex, "[Announcements] Analytics flush failed; unsaved estimates were discarded."); }
+        }
+    }
+
+    public void Dispose()
+    {
+        _analyticsTimer.Dispose();
+        FlushAnalytics();
     }
 
     private static IEnumerable<Announcement> SortForDisplay(IEnumerable<Announcement> source)
@@ -147,6 +211,8 @@ public class AnnouncementStore
             var existing = _items.FirstOrDefault(x => x.Id == a.Id);
             if (existing is null)
             {
+                a.ViewCount = 0;
+                a.DismissCount = 0;
                 _items.Add(a);
             }
             else
@@ -265,8 +331,8 @@ public class AnnouncementStore
         {
             var item = _items.FirstOrDefault(x => x.Id == id);
             if (item is null) return;
-            item.ViewCount++;
-            Save();
+            if (item.ViewCount < int.MaxValue) item.ViewCount++;
+            _analyticsDirty = true;
         }
     }
 
@@ -329,8 +395,8 @@ public class AnnouncementStore
         {
             var item = _items.FirstOrDefault(x => x.Id == id);
             if (item is null) return;
-            item.DismissCount++;
-            Save();
+            if (item.DismissCount < int.MaxValue) item.DismissCount++;
+            _analyticsDirty = true;
         }
     }
 

@@ -2,6 +2,20 @@
 
  All notable changes to this project will be documented in this file.
 
+## 0.2.0.8 - 2026-10-16
+
+- Enforce announcement audience, user, role, and library access on the server. Anonymous callers receive only eligible announcements explicitly enabled for the login page; targeting lists and analytics are omitted from the public feed.
+- Discard responses from an earlier login session and remove banners when credentials change. Resolve targeting on the server without repeated browser user/library lookups.
+- Preserve dismissals through failed requests and viewer changes using opaque, viewer-specific content revisions. Remove legacy storage containing announcement text; existing dismissals reset once on upgrade. Retain the latest 512 dismissals per storage type.
+- Preserve all supported audiences and hidden role/library rules when editing announcements.
+- Flush announcement writes to a staging file before replacement, preserve malformed files for recovery, lock writes after unreadable storage, and report failed saves instead of silently accepting them.
+- Batch analytics persistence every 30 seconds and apply an atomic, bounded aggregate throttle. Analytics remain unverified estimates; abrupt shutdown can lose the latest batch.
+- Restrict web patch selections to deployment-approved index paths and reject symbolic links. Nonstandard installations require a local environment override.
+- Update build CI to .NET 10 on Windows and Linux.
+- Display zero-valued analytics correctly, avoid duplicate archived status badges, and improve message-editor and Cancel Edit contrast in the dark theme.
+
+Thanks to @crocodile13 for reporting the targeting, login/dismissal, and storage/editor issues in #3, #4, and #6. The fixes in this release were independently implemented by the maintainer; those pull requests were not merged.
+
 ## 0.2.0.7 - 2026-09-17
 
 - Added Jellyfin 12 support by moving the plugin to .NET 10 and the Jellyfin 12 API packages.

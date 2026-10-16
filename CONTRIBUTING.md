@@ -2,17 +2,19 @@
 
 Thanks for contributing.
 
+This project is maintained by a sole maintainer and is currently not accepting external code contributions. Bug reports, reproduction steps, and suggestions are welcome. The maintainer implements fixes directly and may acknowledge reports in release notes. Reporting an issue does not require repository access.
+
 ## Development Setup
 
-1. Install .NET 9 SDK.
+1. Install .NET 10 SDK.
 2. Clone this repository.
 3. Run:
 
-   dotnet build -c Release
+   dotnet build Jellyfin.Plugin.Announcements.csproj -c Release
 
 4. Publish for plugin deployment:
 
-   dotnet publish -c Release -o publish
+   dotnet publish Jellyfin.Plugin.Announcements.csproj -c Release -o publish
 
 ## Coding Guidelines
 
@@ -23,10 +25,7 @@ Thanks for contributing.
 
 ## Pull Requests
 
-- Describe what changed and why.
-- Include Jellyfin version tested.
-- Include before/after behavior for UI or API changes.
-- Update CHANGELOG.md for user-visible changes.
+Please open a bug report or feature request instead of a code pull request. Existing pull requests may be closed when an independently implemented fix is available; the closing comment will link to the relevant change or release.
 
 ## Bug Reports
 

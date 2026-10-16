@@ -3,9 +3,9 @@
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <LangVersion>latest</LangVersion>
-    <Version>0.2.0.7</Version>
-    <AssemblyVersion>0.2.0.7</AssemblyVersion>
-    <FileVersion>0.2.0.7</FileVersion>
+    <Version>0.2.0.8</Version>
+    <AssemblyVersion>0.2.0.8</AssemblyVersion>
+    <FileVersion>0.2.0.8</FileVersion>
     <Authors>BLCKSNAKE</Authors>
     <Company>BLCKSNAKE</Company>
     <AssemblyName>Jellyfin.Plugin.Announcements</AssemblyName>
@@ -26,6 +26,7 @@
 
   <!-- Embed the admin web page inside the DLL -->
   <ItemGroup>
+    <Compile Remove="tests/**/*.cs" />
     <EmbeddedResource Include="Web\configPage.html" />
     <EmbeddedResource Include="Web\announcement.js" />
     <EmbeddedResource Include="Web\announcement.css" />

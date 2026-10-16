@@ -6,7 +6,7 @@ Server-wide announcements and maintenance banners for Jellyfin.
 
 ## Status
 
-- Version: 0.2.0.7
+- Version: 0.2.0.8
 - Target Jellyfin ABI: 12.0.0.0
 - Framework: .NET 10
 
@@ -34,9 +34,52 @@ Server-wide announcements and maintenance banners for Jellyfin.
 
 The plugin catalog metadata now points at the hosted project logo so the Jellyfin manifest can display branded artwork after release.
 
-## Screenshot
+## Screenshots
 
-![Announcements plugin screenshot](docs/images/plugin-screenshot.png)
+Screenshots show version 0.2.0.8 in Jellyfin 12.1 with sample announcements. Open an image to view it at full resolution.
+
+**Manage announcements:** search, tags, schedule status, enable/disable, archive/unarchive, duplicate, delete, and estimated analytics.
+
+![Announcement management with active, scheduled, paused, and archived examples](docs/images/plugin-management.png)
+
+**Choose who sees each announcement:** audiences, roles, devices, and specific-user inclusion/exclusion.
+
+![Audience, role, device, and specific-user targeting](docs/images/plugin-targeting.png)
+
+<details>
+<summary>Full editor: message, severity, scheduling, login visibility, dismissal behavior, and tags</summary>
+
+![Announcement editor with a scheduled maintenance notice](docs/images/plugin-screenshot.png)
+
+</details>
+
+<details>
+<summary>Live banners: Info, Warning, and non-dismissible Critical</summary>
+
+<img src="docs/images/plugin-banner-severities.png" alt="Blue Info, amber Warning, and red Critical announcement banners" width="620" />
+
+</details>
+
+<details>
+<summary>Public announcements on the login page</summary>
+
+![Public login-page announcement before signing in](docs/images/plugin-login-banner.png)
+
+</details>
+
+<details>
+<summary>Mobile banner layout</summary>
+
+<img src="docs/images/plugin-mobile-banners.png" alt="Announcement wrapping to fit a mobile viewport" width="390" />
+
+</details>
+
+<details>
+<summary>Settings and operational diagnostics</summary>
+
+![Path configuration, injection mode, resolved path, startup time, and plugin version](docs/images/plugin-settings.png)
+
+</details>
 
 ## Easy Install
 
@@ -71,7 +114,7 @@ For release packaging and repository publishing workflow, see DISTRIBUTION.md.
 
 ## Compatibility Notes
 
-- Version 0.2.0.7 is tested with Jellyfin 12.1. Version 0.2.0.6 remains available for Jellyfin 10.11.
+- Version 0.2.0.8 is tested with Jellyfin 12.1. Version 0.2.0.6 remains available for Jellyfin 10.11.
 - Auto web injection now supports Windows, Linux, macOS, and common container layouts.
 - Diagnostics in the admin page show the resolved index path and whether Announcements patched it successfully.
 - User-targeted announcements now re-evaluate automatically on login, logout, and same-tab account switching.
@@ -90,6 +133,14 @@ For release packaging and repository publishing workflow, see DISTRIBUTION.md.
 - Use specific-user targeting when a banner must only appear for named users such as a single admin or household member.
 - Explicitly included users override role filters, unless that same user is explicitly excluded.
 - Library targeting is still supported by the underlying model for compatibility, but it is no longer exposed in the simplified admin editor.
+
+In version 0.2.0.8, audience, user, role, and library rules are enforced before content leaves the server. Anonymous requests receive only eligible announcements with the login-page toggle enabled. Device rules control display and are not an authorization boundary. Legacy `kids` audiences are not delivered because Jellyfin provides no native kid classification.
+
+Dismissals are scoped to the viewer and content revision. Upgrading clears old dismissal records that contained message text, so previously dismissed banners may appear once. The latest 512 dismissals are retained per storage type.
+
+Views, dismissals, and active impressions are browser-reported estimates, not verified usage or audit records. Counter writes are batched every 30 seconds; the latest batch may be lost on a crash.
+
+Custom patch paths must match a standard installation path or a path explicitly approved through `JELLYFIN_WEB_DIR` / `JELLYFIN_WEB_INDEX_PATH` by the local server operator. Restart after setting an override. Symlinked paths are refused; use a direct installation path. Keep installation directories writable only by trusted local operators.
 
 ## Troubleshooting: Banner Not Displaying (Linux/Docker)
 

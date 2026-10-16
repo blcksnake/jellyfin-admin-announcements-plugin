@@ -7,7 +7,7 @@ release/
 *.cache
 *.log
 .vscode/
-docker/jellyfin-test/
+docker/
 node_modules/
 playwright-report/
 test-results/
@@ -15,3 +15,7 @@ test-results/
 package.json
 package-lock.json
 tests/
+LINUX_TESTING.md
+docker-compose*test*.yml
+docker-compose*test*.yaml
+playwright.config.*
